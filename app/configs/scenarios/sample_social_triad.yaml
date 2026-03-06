@@ -1,0 +1,41 @@
+name: sample_social_triad
+description: Three-agent planning scenario with tension between speed, cooperation, and skepticism.
+relationships:
+  - source: Ava
+    target: Ben
+    trust: 0.25
+    affinity: 0.40
+  - source: Ben
+    target: Ava
+    trust: 0.30
+    affinity: 0.35
+  - source: Ben
+    target: Cyra
+    trust: -0.05
+    affinity: -0.15
+  - source: Cyra
+    target: Ben
+    trust: -0.20
+    affinity: -0.30
+  - source: Ava
+    target: Cyra
+    trust: 0.10
+    affinity: 0.05
+  - source: Cyra
+    target: Ava
+    trust: 0.05
+    affinity: 0.10
+world_events:
+  - tick: 2
+    key: external_deadline
+    content: A hard deadline is announced for decision submission.
+    payload:
+      valence: negative
+      urgency: 0.7
+seed_messages:
+  - tick: 0
+    sender: Ben
+    receiver: Ava
+    intent: propose
+    emotional_tone: assertive
+    content: We should decide quickly and move.

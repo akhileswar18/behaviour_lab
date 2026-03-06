@@ -1,0 +1,49 @@
+name: sample_social_tension
+description: >
+  Three-agent scenario with explicit tension and opportunity events used for deterministic
+  social interaction testing.
+relationships:
+  - source: Ava
+    target: Ben
+    trust: 0.20
+    affinity: 0.30
+  - source: Ben
+    target: Ava
+    trust: 0.22
+    affinity: 0.28
+  - source: Ben
+    target: Cyra
+    trust: -0.15
+    affinity: -0.25
+  - source: Cyra
+    target: Ben
+    trust: -0.22
+    affinity: -0.30
+  - source: Ava
+    target: Cyra
+    trust: 0.12
+    affinity: 0.08
+  - source: Cyra
+    target: Ava
+    trust: 0.10
+    affinity: 0.12
+world_events:
+  - tick: 1
+    key: funding_cut_rumor
+    content: Rumor of budget cuts raises pressure on everyone.
+    payload:
+      valence: negative
+      urgency: 0.8
+  - tick: 3
+    key: leadership_support_offer
+    content: Leadership offers support if the team can align on a plan.
+    payload:
+      valence: positive
+      urgency: 0.5
+seed_messages:
+  - tick: 0
+    sender: Ava
+    receiver: Ben
+    intent: propose
+    emotional_tone: supportive
+    content: Let's align on a plan before we react.

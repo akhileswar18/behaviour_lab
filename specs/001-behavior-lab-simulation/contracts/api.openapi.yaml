@@ -1,0 +1,319 @@
+openapi: 3.1.0
+info:
+  title: Behavior Lab API - Phase 2 Social Dynamics
+  version: 0.2.0
+  description: Local API contract for social interactions, relationship updates, and scenario event influence.
+servers:
+  - url: http://127.0.0.1:8000
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: getHealth
+      responses:
+        '200':
+          description: API healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+
+  /scenarios:
+    get:
+      summary: List scenarios
+      operationId: listScenarios
+      responses:
+        '200':
+          description: Scenarios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Scenario'
+    post:
+      summary: Create scenario
+      operationId: createScenario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScenarioCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Scenario'
+
+  /scenarios/{scenario_id}/run:
+    post:
+      summary: Run N simulation ticks
+      operationId: runScenario
+      parameters:
+        - in: path
+          name: scenario_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunRequest'
+      responses:
+        '200':
+          description: Tick execution results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunResponse'
+
+  /scenarios/{scenario_id}/messages:
+    get:
+      summary: Query communication feed
+      operationId: getMessages
+      parameters:
+        - in: path
+          name: scenario_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: agent_id
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: tick_from
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: tick_to
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+
+  /scenarios/{scenario_id}/relationships:
+    get:
+      summary: Query relationship state/history
+      operationId: getRelationships
+      parameters:
+        - in: path
+          name: scenario_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: agent_id
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Relationship rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Relationship'
+
+  /scenarios/{scenario_id}/timeline:
+    get:
+      summary: Query timeline/event feed
+      operationId: getTimeline
+      parameters:
+        - in: path
+          name: scenario_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: tick_from
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: tick_to
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: agent_id
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: event_type
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Timeline events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SimulationEvent'
+
+  /scenarios/{scenario_id}/events:
+    post:
+      summary: Inject deterministic scenario/world event
+      operationId: injectScenarioEvent
+      parameters:
+        - in: path
+          name: scenario_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScenarioEventInjectionRequest'
+      responses:
+        '201':
+          description: Event injection accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScenarioEventInjection'
+
+components:
+  schemas:
+    Scenario:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        status: { type: string }
+        current_tick: { type: integer }
+      required: [id, name, status, current_tick]
+
+    ScenarioCreate:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string }
+      required: [name]
+
+    RunRequest:
+      type: object
+      properties:
+        ticks: { type: integer, minimum: 1 }
+      required: [ticks]
+
+    TickResult:
+      type: object
+      properties:
+        tick_number: { type: integer }
+        status: { type: string }
+        processed_agents: { type: integer }
+        events_created: { type: integer }
+        messages_created: { type: integer }
+        duration_ms: { type: integer }
+      required: [tick_number, status, processed_agents, events_created, messages_created, duration_ms]
+
+    RunResponse:
+      type: object
+      properties:
+        scenario_id: { type: string, format: uuid }
+        start_tick: { type: integer }
+        end_tick: { type: integer }
+        tick_results:
+          type: array
+          items: { $ref: '#/components/schemas/TickResult' }
+      required: [scenario_id, start_tick, end_tick, tick_results]
+
+    Message:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        tick_number: { type: integer }
+        sender_agent_id: { type: string, format: uuid }
+        receiver_agent_id: { type: string, format: uuid, nullable: true }
+        target_mode: { type: string }
+        content: { type: string }
+        intent: { type: string }
+        emotional_tone: { type: string }
+        intent_tags:
+          type: array
+          items: { type: string }
+        created_at: { type: string, format: date-time }
+      required: [id, tick_number, sender_agent_id, content, intent, emotional_tone, intent_tags, created_at]
+
+    Relationship:
+      type: object
+      properties:
+        source_agent_id: { type: string, format: uuid }
+        target_agent_id: { type: string, format: uuid }
+        trust_score: { type: number }
+        affinity_score: { type: number }
+        stance: { type: string }
+        last_interaction_at: { type: string, format: date-time, nullable: true }
+        last_updated_tick: { type: integer }
+        updated_at: { type: string, format: date-time }
+      required: [source_agent_id, target_agent_id, trust_score, affinity_score, last_updated_tick, updated_at]
+
+    SimulationEvent:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        tick_number: { type: integer }
+        event_type: { type: string }
+        actor_agent_id: { type: string, format: uuid, nullable: true }
+        target_agent_id: { type: string, format: uuid, nullable: true }
+        content: { type: string }
+        payload: { type: object, additionalProperties: true }
+        created_at: { type: string, format: date-time }
+      required: [id, tick_number, event_type, payload, created_at]
+
+    ScenarioEventInjectionRequest:
+      type: object
+      properties:
+        tick_number: { type: integer, minimum: 0 }
+        event_key: { type: string }
+        event_content: { type: string }
+        payload: { type: object, additionalProperties: true }
+      required: [tick_number, event_key, event_content]
+
+    ScenarioEventInjection:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        scenario_id: { type: string, format: uuid }
+        tick_number: { type: integer }
+        event_key: { type: string }
+        event_content: { type: string }
+        payload: { type: object, additionalProperties: true }
+        is_consumed: { type: boolean }
+        created_at: { type: string, format: date-time }
+      required: [id, scenario_id, tick_number, event_key, event_content, is_consumed, created_at]

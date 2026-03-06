@@ -1,0 +1,1 @@
+"""API social schema package."""

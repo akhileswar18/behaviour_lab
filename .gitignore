@@ -1,0 +1,39 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage/
+htmlcov/
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Local runtime artifacts
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment and logs
+.env
+.env.*
+!.env.example
+*.log
+
+# Editor/OS
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
