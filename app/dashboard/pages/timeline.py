@@ -14,6 +14,7 @@ if scenario_id:
         "tick_to": filters["tick_to"],
         "agent_id": filters["agent_id"],
         "event_type": filters["event_type"],
+        "zone_id": filters["zone_id"],
     }
     params = {k: v for k, v in params.items() if v is not None}
 

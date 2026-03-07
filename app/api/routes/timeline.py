@@ -3,8 +3,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from app.api.schemas.social import TimelineEventRead
 from app.api.deps import get_session
+from app.api.schemas.social import TimelineEventRead
 from app.persistence.repositories.social_repository import SocialRepository
 
 router = APIRouter(prefix="/scenarios", tags=["timeline"])
@@ -17,6 +17,9 @@ def get_timeline(
     tick_to: int | None = None,
     agent_id: UUID | None = None,
     event_type: str | None = None,
+    decision_source: str | None = None,
+    zone_id: UUID | None = None,
+    limit: int | None = None,
     session: Session = Depends(get_session),
 ) -> list[TimelineEventRead]:
     repo = SocialRepository(session)
@@ -26,7 +29,14 @@ def get_timeline(
         tick_to=tick_to,
         agent_id=agent_id,
         event_type=event_type,
+        zone_id=zone_id,
     )
+    if decision_source is not None:
+        rows = [
+            row
+            for row in rows
+            if str((row.payload or {}).get("decision_source", "")) == decision_source
+        ]
     return [
         TimelineEventRead(
             id=r.id,
@@ -38,5 +48,5 @@ def get_timeline(
             payload=r.payload,
             created_at=r.created_at,
         )
-        for r in rows
+        for r in (rows[:limit] if limit is not None else rows)
     ]

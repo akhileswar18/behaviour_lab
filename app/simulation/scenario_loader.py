@@ -30,6 +30,32 @@ def merge_persona_overrides(
     return merged
 
 
+def merge_agent_state_overrides(
+    base_states: dict[str, dict[str, Any]], overrides: dict[str, dict[str, Any]]
+) -> dict[str, dict[str, Any]]:
+    merged: dict[str, dict[str, Any]] = {}
+    for agent_name, base_state in base_states.items():
+        state = dict(base_state)
+        for key, value in overrides.get(agent_name, {}).items():
+            state[key] = value
+        merged[agent_name] = state
+    return merged
+
+
+def merge_world_overrides(
+    base_world: dict[str, dict[str, Any]], overrides: dict[str, dict[str, Any]]
+) -> dict[str, dict[str, Any]]:
+    merged: dict[str, dict[str, Any]] = {}
+    for key, value in base_world.items():
+        merged[key] = dict(value)
+        for override_key, override_value in overrides.get(key, {}).items():
+            merged[key][override_key] = override_value
+    for key, override_value in overrides.items():
+        if key not in merged:
+            merged[key] = dict(override_value)
+    return merged
+
+
 def build_variant_name(base_name: str, variant_name: str) -> str:
     suffix = variant_name.strip() or "variant"
     return f"{base_name}-{suffix}"

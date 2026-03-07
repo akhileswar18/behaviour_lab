@@ -20,9 +20,15 @@ if scenario_id:
             f"/scenarios/{scenario_id}/messages",
             params={"agent_id": selected},
         )
-        relationships = fetch_json(f"/scenarios/{scenario_id}/relationships")
+        relationships = fetch_json(f"/scenarios/{scenario_id}/relationships", params={"agent_id": selected})
+        goals = fetch_json(f"/scenarios/{scenario_id}/goals", params={"agent_id": selected})
+        intentions = fetch_json(f"/scenarios/{scenario_id}/intentions", params={"agent_id": selected})
         st.subheader("Agent Messages")
         st.dataframe(pd.DataFrame(messages), width="stretch")
+        st.subheader("Goals")
+        st.dataframe(pd.DataFrame(goals), width="stretch")
+        st.subheader("Intentions")
+        st.dataframe(pd.DataFrame(intentions), width="stretch")
 
         with Session(get_engine()) as session:
             selected_uuid = UUID(selected)
@@ -43,7 +49,7 @@ if scenario_id:
                         "relationship_factors": d.relationship_factors,
                         "world_event_factors": d.world_event_factors,
                     }
-                    for d in decisions[:10]
+                    for d in decisions[:15]
                 ]
             )
             st.subheader("Recent Decisions")
@@ -89,14 +95,7 @@ if scenario_id:
             st.subheader("Recalled Memories")
             st.dataframe(recall_df, width="stretch")
 
-        rel_df = pd.DataFrame(
-            [
-                r
-                for r in relationships
-                if r["source_agent_id"] == selected or r["target_agent_id"] == selected
-            ]
-        )
         st.subheader("Agent Relationships")
-        st.dataframe(rel_df, width="stretch")
+        st.dataframe(pd.DataFrame(relationships), width="stretch")
 else:
     st.info("Enter a scenario id to load agents.")

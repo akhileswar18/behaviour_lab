@@ -10,6 +10,13 @@ agents:
     initial_state:
       mood: "curious"
       goals: ["understand group dynamics", "reduce conflict"]
+      hunger: 0.20
+      safety_need: 0.25
+      social_need: 0.30
+      zone: "Commons"
+      inventory:
+        food: 0
+        medicine: 0
   - name: "Ben"
     persona:
       label: "Assertive Optimist"
@@ -21,6 +28,13 @@ agents:
     initial_state:
       mood: "energized"
       goals: ["push decisions quickly", "build influence"]
+      hunger: 0.35
+      safety_need: 0.20
+      social_need: 0.15
+      zone: "Storage"
+      inventory:
+        food: 1
+        medicine: 0
   - name: "Cyra"
     persona:
       label: "Guarded Skeptic"
@@ -32,3 +46,10 @@ agents:
     initial_state:
       mood: "guarded"
       goals: ["challenge weak assumptions", "avoid manipulation"]
+      hunger: 0.25
+      safety_need: 0.40
+      social_need: 0.10
+      zone: "Shelter"
+      inventory:
+        food: 0
+        medicine: 1

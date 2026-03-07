@@ -27,6 +27,11 @@ def _ensure_indexes() -> None:
         "CREATE UNIQUE INDEX IF NOT EXISTS uq_relationship_scenario_pair ON relationship (scenario_id, source_agent_id, target_agent_id)",
         "CREATE INDEX IF NOT EXISTS ix_decision_scenario_tick_agent ON decisionlog (scenario_id, tick_number, agent_id)",
         "CREATE INDEX IF NOT EXISTS ix_event_injection_scenario_tick ON scenarioeventinjection (scenario_id, tick_number, is_consumed)",
+        "CREATE INDEX IF NOT EXISTS ix_goal_scenario_agent_status ON goal (scenario_id, agent_id, status)",
+        "CREATE INDEX IF NOT EXISTS ix_intention_scenario_agent_status ON intention (scenario_id, agent_id, status)",
+        "CREATE INDEX IF NOT EXISTS ix_resource_scenario_zone_type ON resource (scenario_id, zone_id, resource_type)",
+        "CREATE INDEX IF NOT EXISTS ix_agent_state_agent_tick ON agentstatesnapshot (agent_id, tick_number)",
+        "CREATE UNIQUE INDEX IF NOT EXISTS uq_zone_scenario_name ON zone (scenario_id, name)",
     ]
     with engine.begin() as connection:
         for statement in statements:
@@ -41,6 +46,16 @@ def init_db() -> None:
         [
             "memory_sensitivity FLOAT DEFAULT 0.5",
             "emotional_bias FLOAT DEFAULT 0.0",
+        ],
+    )
+    _ensure_columns(
+        "agentstatesnapshot",
+        [
+            "hunger FLOAT DEFAULT 0.0",
+            "safety_need FLOAT DEFAULT 0.0",
+            "social_need FLOAT DEFAULT 0.0",
+            "zone_id CHAR(32)",
+            "inventory JSON DEFAULT '{}'",
         ],
     )
     _ensure_columns(
@@ -70,7 +85,36 @@ def init_db() -> None:
             "persona_factors JSON DEFAULT '{}'",
             "relationship_factors JSON DEFAULT '{}'",
             "world_event_factors JSON DEFAULT '{}'",
+            "decision_source VARCHAR DEFAULT 'deterministic'",
+            "parser_status VARCHAR DEFAULT 'not_attempted'",
+            "fallback_reason VARCHAR",
+            "prompt_summary JSON DEFAULT '{}'",
+            "llm_metadata JSON DEFAULT '{}'",
             "message_id CHAR(32)",
+        ],
+    )
+    _ensure_columns(
+        "runmetadata",
+        [
+            "planning_overrides JSON DEFAULT '{}'",
+            "world_overrides JSON DEFAULT '{}'",
+            "policy_mode VARCHAR DEFAULT 'deterministic'",
+            "llm_provider VARCHAR",
+            "llm_model VARCHAR",
+            "llm_config_summary JSON DEFAULT '{}'",
+            "decision_source_counts JSON DEFAULT '{}'",
+            "fallback_count INTEGER DEFAULT 0",
+            "parse_failure_count INTEGER DEFAULT 0",
+        ],
+    )
+    _ensure_columns(
+        "runcomparisonsummary",
+        [
+            "completed_goal_delta INTEGER DEFAULT 0",
+            "move_event_delta INTEGER DEFAULT 0",
+            "resource_event_delta INTEGER DEFAULT 0",
+            "fallback_count_delta INTEGER DEFAULT 0",
+            "llm_decision_delta INTEGER DEFAULT 0",
         ],
     )
     _ensure_indexes()
