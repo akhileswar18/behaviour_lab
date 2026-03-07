@@ -1,29 +1,35 @@
-# Implementation Plan: Phase 2 Social Dynamics for Multi-Agent Behavior Lab
+# Implementation Plan: Phase 3 Goal-Directed Situated Behavior
 
 **Branch**: `001-behavior-lab-simulation` | **Date**: 2026-03-06 | **Spec**: `C:\Users\akhil\behaviour_lab\specs\001-behavior-lab-simulation\spec.md`
-**Input**: Feature specification from `C:\Users\akhil\behaviour_lab\specs\001-behavior-lab-simulation\spec.md` and Phase 2 objective request.
+**Input**: Existing feature specification plus the Phase 3 goal-directed behavior request for goals,
+needs, resources, zones, interruption handling, and inspectable planning state.
 
 ## Summary
 
-Phase 1 is complete and provides a runnable local baseline. Phase 2 extends the existing tick loop into
-real social dynamics: structured agent-to-agent communication, explicit relationship updates, persona-driven
-behavior differences, and scenario/world event influence. All effects remain persisted and inspectable via
-FastAPI + Streamlit without introducing cloud, websocket, or distributed complexity.
+Phase 3 extends the completed social simulation into deterministic goal-directed behavior.
+Agents keep active goals and intentions across ticks, react to changing needs and local
+resources, move through simple zones, and replan when urgent events or shortages override
+their current intention. All plan changes, movements, resource events, and need transitions
+remain persisted and visible through the API and dashboard.
 
 ## Technical Context
 
-**Language/Version**: Python 3.11+
-**Primary Dependencies**: FastAPI, Streamlit, SQLModel, Pydantic, pydantic-settings, pytest
-**Storage**: SQLite (local single-file persistent state)
-**Testing**: pytest (unit + integration + scenario + contract)
-**Target Platform**: Local desktop runtime (single machine)
-**Project Type**: Single-project monorepo with API, simulation engine, and dashboard
-**Agent Scale Target**: 2-5 agents per scenario for deterministic social behavior studies
-**Time Model**: Deterministic tick-based orchestration with persisted per-tick outputs
-**Observability Surface**: Streamlit social views + structured DB-backed timeline/event/message traces
-**Performance Goals**: 10-tick, 3-agent scenario under 5 seconds locally with full event persistence
-**Constraints**: Local-first, deterministic logic first, no websockets, no auth, no cloud, no microservices
-**Scale/Scope**: Social behavior depth over scale; incremental extension of current loop, not a rewrite
+**Language/Version**: Python 3.11+  
+**Primary Dependencies**: FastAPI, Streamlit, SQLModel, Pydantic, pydantic-settings, pytest, PyYAML  
+**Storage**: SQLite local file database with SQLModel tables for world, planning, and resource state  
+**Testing**: pytest unit, integration, scenario, contract, and smoke tests  
+**Target Platform**: Local desktop Python runtime on a single machine  
+**Project Type**: Monorepo simulation engine + API + dashboard  
+**Agent Scale Target**: 2-5 agents in deterministic scenario runs  
+**Time Model**: Deterministic tick-based simulation with persisted state snapshots  
+**Observability Surface**: Streamlit pages for agents, goals, plans, zones, resources, and timeline;
+DB-backed event traces and state tables  
+**Performance Goals**: 10-tick, 3-agent, 3-zone scenario under 5 seconds locally including
+goal/resource persistence and dashboard queries  
+**Constraints**: Local-first, deterministic rule logic first, no LLM planning, no websockets, no auth,
+no cloud infra, no microservices, no pygame/2D embodiment in this phase  
+**Scale/Scope**: Small situated scenarios with simple zones and 1-3 resource types; no freeform world
+simulation or physics engine
 
 ## Constitution Check
 
@@ -31,25 +37,25 @@ FastAPI + Streamlit without introducing cloud, websocket, or distributed complex
 
 ### Pre-Design Gate Review
 
-- [x] Behavior-first scope: work targets communication, persona, memory, relationships, and inspectability.
-- [x] Python-first simplicity: stack unchanged; no heavy new frameworks.
-- [x] Modular architecture: extends existing modules (`communication`, `simulation`, `memory`, `dashboard`, `persistence`).
-- [x] Observable-by-design: message, relationship, and scenario event transitions are persisted and queryable.
-- [x] Memory and persona impact: decision pipeline consumes persona traits + memory retrieval context.
-- [x] Communication consequences: messages trigger relationship and memory side effects.
-- [x] State-over-time continuity: all social updates tied to tick timeline.
-- [x] Structured schema discipline: Message/Relationship/SimulationEvent payloads remain structured.
-- [x] Scenario-first validation: triad scenario and event injection validate social interactions.
-- [x] Dashboard-first acceptance: dedicated communication/relationship/agent-detail timeline views required.
-- [x] Local-first baseline: no new external runtime dependencies.
-- [x] Experiment readiness: run-to-run comparison remains available and expanded with social metrics.
+- [x] Behavior-first scope: planning, needs, goals, and resource-driven action remain primary; no graphics expansion.
+- [x] Python-first simplicity: stack remains unchanged and deterministic rule logic avoids heavy planner frameworks.
+- [x] Modular architecture: planning, world state, persistence, dashboard, and simulation extensions remain isolated modules.
+- [x] Observable-by-design: goals, intentions, plan changes, movement, acquisitions, consumption, and interruptions will emit structured traces.
+- [x] Memory and persona impact: planning consumes memory, persona, relationships, needs, and local context together.
+- [x] Communication consequences: communication remains one possible action alongside movement and resource interaction.
+- [x] State-over-time continuity: goals, intentions, needs, zone occupancy, and resources persist across ticks.
+- [x] Structured schema discipline: goals, plan state, zones, resource records, and plan transitions use structured models.
+- [x] Scenario-first validation: Phase 3 introduces a small multi-zone scenario with shortage and interruption pressure.
+- [x] Dashboard-first acceptance: goals, needs, resources, zones, and plan transitions must be visible without reading code.
+- [x] Local-first baseline: all planning, persistence, and inspection remain local.
+- [x] Experiment readiness: deterministic variants can compare how needs/goals/resources shape outcomes.
 
-### Post-Design Gate Review (after Phase 1 artifacts)
+### Post-Design Gate Review
 
-- [x] Research decisions resolve all architecture ambiguities.
-- [x] Data model explicitly covers message intent/tone, relationship score evolution, and scenario event injection.
-- [x] Contracts define communication feed, relationship history, event injection, and filtered timeline access.
-- [x] Quickstart demonstrates end-to-end social flow: event -> message -> relationship update -> memory trace.
+- [x] Research decisions resolve planning, interruption, and world-grounding ambiguities.
+- [x] Data model explicitly covers goals, intentions, needs, zones, resources, and plan-transition events.
+- [x] Contracts define goal/plan/resource/zone queries and timeline filtering for new event classes.
+- [x] Quickstart demonstrates need -> goal -> plan -> move/resource/social effect visibility.
 
 ## Project Structure
 
@@ -72,146 +78,167 @@ C:/Users/akhil/behaviour_lab/specs/001-behavior-lab-simulation/
 ```text
 C:/Users/akhil/behaviour_lab/
 ├── app/
+│   ├── agents/
+│   │   ├── decision_policy.py
+│   │   ├── planning_policy.py
+│   │   ├── relationship_policy.py
+│   │   └── models.py
 │   ├── api/
 │   │   ├── main.py
+│   │   ├── schemas/
 │   │   └── routes/
+│   │       ├── agents.py
+│   │       ├── goals.py
+│   │       ├── resources.py
 │   │       ├── scenarios.py
 │   │       ├── simulation.py
 │   │       ├── timeline.py
-│   │       ├── agents.py
-│   │       └── relationships.py
-│   ├── agents/
-│   │   ├── models.py
-│   │   └── decision_policy.py
+│   │       └── zones.py
 │   ├── communication/
-│   │   ├── models.py
-│   │   ├── message_bus.py
-│   │   └── handlers.py
+│   ├── dashboard/
+│   │   ├── main.py
+│   │   ├── components/
+│   │   └── pages/
+│   │       ├── agents.py
+│   │       ├── goals.py
+│   │       ├── resources.py
+│   │       ├── timeline.py
+│   │       └── zones.py
 │   ├── memory/
-│   │   ├── writer.py
-│   │   ├── retriever.py
-│   │   └── summarizer.py
-│   ├── simulation/
-│   │   ├── runner.py
-│   │   ├── tick_engine.py
-│   │   ├── world_state.py
-│   │   └── scenario_loader.py
 │   ├── persistence/
 │   │   ├── models.py
+│   │   ├── seed.py
 │   │   └── repositories/
-│   └── dashboard/
-│       ├── main.py
-│       ├── components/
-│       └── pages/
+│   │       ├── social_repository.py
+│   │       ├── planning_repository.py
+│   │       └── world_repository.py
+│   ├── schemas/
+│   └── simulation/
+│       ├── runner.py
+│       ├── scenario_loader.py
+│       ├── tick_engine.py
+│       └── world_state.py
 └── tests/
-    ├── unit/
+    ├── contract/
     ├── integration/
     ├── scenario/
-    └── contract/
+    ├── smoke/
+    └── unit/
 ```
 
-**Structure Decision**: Keep the current monorepo and extend existing modules in-place to preserve
-local debuggability and avoid architectural churn.
+**Structure Decision**: Keep the existing single-project monorepo and extend it with dedicated
+planning/world repositories, planning policy code, and dashboard pages. This preserves the current
+debuggable architecture while adding world-grounded decision state incrementally.
 
 ## Phase 0: Outline & Research
 
 ### Unknowns Extracted from Technical Context
 
-No unresolved `NEEDS CLARIFICATION` items remain. Phase 2 scope and constraints are explicit.
+No unresolved `NEEDS CLARIFICATION` items remain. Phase 3 scope, constraints, and intended world model
+are explicit.
 
 ### Dependency Best-Practice Research Tasks
 
-- Task: Find best practices for deterministic social-interaction simulation over SQLModel+SQLite.
-- Task: Find best practices for modeling relationship score updates with auditable event traces.
-- Task: Find best practices for keeping Streamlit social dashboards query-driven from persisted state.
+- Task: Find best practices for deterministic goal and intention tracking over SQLModel + SQLite.
+- Task: Find best practices for modeling zone occupancy and local resource queries in small simulations.
+- Task: Find best practices for representing lightweight need/drive state without exploding rule complexity.
 
 ### Integration Pattern Research Tasks
 
-- Task: Find patterns for event injection into tick loops without breaking determinism.
-- Task: Find patterns for message -> relationship -> memory side-effect chains with traceability.
-- Task: Find patterns for persona trait influence that remains explainable in decision logs.
+- Task: Find patterns for urgent-event interruption logic layered on top of a deterministic tick loop.
+- Task: Find patterns for plan-change event tracing that remain replayable in dashboards.
+- Task: Find patterns for combining social context with location/resource context in transparent rule policies.
 
 ## Phase 1: Design & Contracts
 
-### Phase 2 Repository/Module Changes
+### Phase 3 Repository/Module Changes
 
-- `communication/`: Add explicit message intent, emotional tone, and addressing modes.
-- `simulation/`: Extend tick flow to include scenario event ingestion and social action policies.
-- `agents/`: Expand persona influence factors (cooperation/risk/communication style/memory sensitivity).
-- `persistence/`: Ensure structured columns for social payloads and relationship timelines.
-- `api/routes/`: Add/extend endpoints for social message feeds, relationship history, event injection.
-- `dashboard/pages/`: Improve communication feed, relationship tables, agent detail explainability, filters.
+- `agents/`: add planning policy and goal-selection helpers; extend state and persona influence rules.
+- `simulation/`: upgrade tick flow to support plan persistence, movement, location checks, resource actions,
+  and interruption handling.
+- `persistence/`: add goal/intention, zone/location, resource, and occupancy/resource-event models with repositories.
+- `api/routes/`: expose goal, intention, zone, and resource views plus replanning-related timeline data.
+- `dashboard/pages/`: add or extend goals, resources, zones, agent-state, and timeline views for plan observability.
+- `configs/`: add a deterministic multi-zone scenario with resources, starting locations, and urgent events.
 
-### Why This Architecture Fits Phase 2
+### Why This Architecture Fits Phase 3
 
-- Extends current loop instead of replacing it, preserving momentum and test coverage.
-- Keeps deterministic behavior for reproducible experiments.
-- Maintains clean module boundaries for future policy swaps.
-- Uses persisted state as source of truth for dashboard inspectability.
+- Extends the deterministic social loop instead of replacing it, preserving trust in existing tests and replayability.
+- Adds simple world grounding through zones rather than full movement/physics, which matches the constitution.
+- Keeps goals, plans, needs, and resource changes as structured tables and events, which is easier to debug than
+  opaque planner outputs.
+- Preserves dashboard-as-source-of-inspection by making world and plan changes persisted first, rendered second.
 
 ### New/Updated Models and Services
 
-- **Message**:
-  - Add/confirm fields: `intent`, `emotional_tone`, `tick_number`, `sender_agent_id`, `receiver_agent_id|broadcast`.
-- **Relationship**:
-  - Add/confirm fields: `trust_score`, `affinity_score|stance`, `last_interaction_at`, `updated_at`.
-- **SimulationEvent**:
-  - Ensure structured `event_type`, `actor_agent_id`, `target_agent_id`, `scenario_id`, `tick_number`, `payload`.
-- **PersonaProfile**:
-  - Add/confirm: `cooperation_tendency`, `risk_tolerance`, `communication_style`, `memory_sensitivity`, optional `emotional_bias`.
-- **Services**:
-  - `message_service`, `relationship_update_service`, `scenario_event_injection_service`, `decision_explainer`.
+- **Goal**
+  - Tracks persisted goal type, priority, status, target, urgency source, and owning agent.
+- **PlanState / Intention**
+  - Tracks the agent's active intention, current action type, status, rationale, interruptibility, and zone/resource target.
+- **AgentStateSnapshot extension**
+  - Adds `hunger`, `safety_need`, `social_need`, `zone_id`, and lightweight inventory/resource counters.
+- **Zone**
+  - Represents simple named locations with zone type and metadata.
+- **Resource**
+  - Represents scenario resources located in zones with quantity and status.
+- **ResourceEvent**
+  - Captures acquire, consume, move, shortage, and replenish effects either as a dedicated table or structured event subtype.
+- **Services**
+  - `planning_policy`
+  - `goal_service`
+  - `world_repository`
+  - `resource_service`
+  - `interruption_policy`
 
-### End-to-End Data Flow (Phase 2)
+### End-to-End Data Flow (Phase 3)
 
-1. Scenario/world events are loaded or injected for current tick.
-2. Agent observes recent SimulationEvents and retrieves relevant memory.
-3. Decision policy combines persona + relationship context + world state.
-4. Agent chooses social action (`communicate`, `cooperate`, `avoid`, `warn`, `propose`, `wait`).
-5. Persist DecisionLog with rationale fields.
-6. If communication occurs, persist Message + corresponding SimulationEvent.
-7. Apply relationship update rule and persist Relationship + relationship_update event.
-8. Create resulting memory records and retrieval traces.
-9. Dashboard reads persisted state and renders message->relationship->memory chain.
+1. Tick begins with recent global and local events, current zone occupancy, resource availability, memory, and relationship context.
+2. Agent reads active needs and any existing goal/intention state.
+3. Planning policy decides to continue, defer, switch, or interrupt the current plan.
+4. If movement is needed, the agent changes zone and persists movement events and state snapshot updates.
+5. If resource interaction is available, the agent acquires or consumes resources and persists inventory/resource events.
+6. If social interaction remains appropriate, the agent communicates or cooperates using existing Phase 2 mechanics.
+7. Goal/intention updates, decision logs, memory traces, and resulting SimulationEvents are persisted.
+8. Dashboard reads goals, needs, resources, zones, and timeline traces directly from persisted state.
 
-### Slice-by-Slice Roadmap Within Phase 2
+### Slice-by-Slice Roadmap Within Phase 3
 
-- **Slice A: Message Flow Foundation**
-  - Structured message creation + persistence + communication feed API + dashboard feed view.
-- **Slice B: Relationship Dynamics**
-  - Relationship update rules and persistence; relationship history API + dashboard relationship table/graph proxy.
-- **Slice C: Persona Influence Expansion**
-  - Persona trait normalization and policy weighting; decision logs include influence explanation.
-- **Slice D: Scenario Event Layer**
-  - Introduce deterministic scenario event injection and tie events to social decisions.
-- **Slice E: Explainability and Traceability**
-  - Ensure decision logs and timeline show causal chain across world event, message, relationship, memory.
-- **Slice F: Validation and Stabilization**
-  - Scenario and integration tests for social dynamics; local demo script and acceptance verification.
+- **Slice A: Goal and Need Persistence**
+  - Add goal/intention models, agent state need fields, and persisted planning status.
+- **Slice B: Zones and Resource Grounding**
+  - Add zones, agent location, resource state, and location-aware opportunity checks.
+- **Slice C: Deterministic Planning Loop**
+  - Add planning policy that continues, defers, switches, or interrupts plans using needs + local context.
+- **Slice D: Resource and Movement Actions**
+  - Implement `move`, `acquire`, and `consume` actions with persisted events and state changes.
+- **Slice E: Dashboard Observability**
+  - Add goals/plans, zone occupancy, and resource views with new timeline filters and causal visibility.
+- **Slice F: Validation Scenarios**
+  - Add shortage and urgent-event scenarios to prove interruption, replanning, and goal persistence.
 
 ### Risks, Tradeoffs, and What to Avoid
 
-- Risk: Non-deterministic behavior reduces debugability.
-  - Mitigation: deterministic policy defaults and fixed per-tick ordering.
-- Risk: Relationship updates become opaque heuristics.
-  - Mitigation: explicit rule definitions + event-level trace payloads.
-- Risk: Dashboard over-couples to in-memory state.
-  - Mitigation: all views query persisted models only.
+- Risk: planning state becomes opaque and hard to trust.
+  - Mitigation: persist every plan change and interruption as explicit events with rationale.
+- Risk: world grounding grows into premature game logic.
+  - Mitigation: limit Phase 3 to zone transitions and simple resource tables; no pathfinding or physics.
+- Risk: too many need variables produce brittle heuristics.
+  - Mitigation: keep initial needs minimal (`hunger`, `safety_need`, optional `social_need`) and deterministic.
 - Avoid:
-  - Adding LLM integration in this phase (future work only).
-  - Rewriting existing architecture or introducing microservices.
-  - Introducing websocket push complexity before needs are proven.
-  - Adding vector DB memory or movement/game-world mechanics.
+  - LLM planning in this phase.
+  - Full 2D/pygame embodiment.
+  - Vector memory or distributed world simulation.
+  - Hidden in-memory plan state not mirrored to the database.
 
-### Acceptance Criteria for Phase 2 Completion
+### Acceptance Criteria for Phase 3 Completion
 
-- Agents can send persisted messages with intent/tone metadata.
-- Dashboard communication feed shows ordered messages with scenario/agent/tick filters.
-- Relationship state updates are persisted and visible after interactions.
-- Decision logs include persona + relationship + scenario-event rationale signals.
-- Scenario/world events can be injected and affect agent actions in subsequent ticks.
-- Timeline clearly exposes causal chain: world event -> decision/message -> relationship change -> memory.
-- All Phase 2 tests pass locally with reproducible outputs.
+- Agents persist current goals and active intentions across ticks.
+- Agents can move between zones and resource opportunities depend on location.
+- Resource shortage changes decisions and can redirect agent plans.
+- Urgent events or severe needs can interrupt an active plan and create persisted plan-change events.
+- Dashboard shows goals, needs, plans, locations, resources, and timeline traces for plan transitions.
+- Timeline supports causal inspection across need -> goal -> intention -> action -> world/social effect.
+- Phase 3 scenario tests pass locally and remain deterministic across reruns.
 
 ## Complexity Tracking
 

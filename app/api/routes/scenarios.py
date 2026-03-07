@@ -1,11 +1,12 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select
+from sqlmodel import Session
 
+from app.analytics.comparison_analytics import compare_policy_modes
 from app.api.schemas.social import MessageRead
 from app.api.deps import get_session
-from app.persistence.models import DecisionLog, Relationship, Scenario, TickResult
+from app.persistence.models import Scenario
 from app.persistence.repositories.social_repository import SocialRepository
 from app.persistence.repositories.scenario_repository import ScenarioRepository
 from app.schemas.api import ScenarioCreate, ScenarioRead
@@ -73,19 +74,11 @@ def message_feed(
 
 @router.get("/{scenario_id}/compare/{other_scenario_id}")
 def compare_runs(scenario_id: UUID, other_scenario_id: UUID, session: Session = Depends(get_session)) -> dict:
-    base_ticks = list(session.exec(select(TickResult).where(TickResult.scenario_id == scenario_id)))
-    other_ticks = list(session.exec(select(TickResult).where(TickResult.scenario_id == other_scenario_id)))
-    base_decisions = list(session.exec(select(DecisionLog).where(DecisionLog.scenario_id == scenario_id)))
-    other_decisions = list(session.exec(select(DecisionLog).where(DecisionLog.scenario_id == other_scenario_id)))
-    base_relationships = list(session.exec(select(Relationship).where(Relationship.scenario_id == scenario_id)))
-    other_relationships = list(session.exec(select(Relationship).where(Relationship.scenario_id == other_scenario_id)))
-
+    comparison = compare_policy_modes(session, scenario_id, other_scenario_id)
     return {
         "scenario_id_a": str(scenario_id),
         "scenario_id_b": str(other_scenario_id),
-        "metrics": {
-            "tick_count_delta": len(base_ticks) - len(other_ticks),
-            "decision_count_delta": len(base_decisions) - len(other_decisions),
-            "relationship_record_delta": len(base_relationships) - len(other_relationships),
-        },
+        "base_policy_mode": comparison["base_policy_mode"],
+        "variant_policy_mode": comparison["variant_policy_mode"],
+        "metrics": comparison["deltas"],
     }

@@ -1,0 +1,101 @@
+name: sample_goal_resource_lab
+description: >
+  Three-agent situated scenario with scarce food, zone-local resources, and urgent world events
+  used for deterministic goal, planning, and interruption testing.
+zones:
+  - name: Commons
+    zone_type: commons
+    metadata:
+      visibility: public
+  - name: Storage
+    zone_type: storage
+    metadata:
+      visibility: local
+  - name: Shelter
+    zone_type: shelter
+    metadata:
+      visibility: local
+resources:
+  - zone: Storage
+    resource_type: food
+    quantity: 2
+  - zone: Shelter
+    resource_type: medicine
+    quantity: 1
+  - zone: Commons
+    resource_type: token
+    quantity: 3
+relationships:
+  - source: Ava
+    target: Ben
+    trust: 0.20
+    affinity: 0.30
+  - source: Ben
+    target: Ava
+    trust: 0.22
+    affinity: 0.28
+  - source: Ben
+    target: Cyra
+    trust: -0.15
+    affinity: -0.25
+  - source: Cyra
+    target: Ben
+    trust: -0.22
+    affinity: -0.30
+  - source: Ava
+    target: Cyra
+    trust: 0.12
+    affinity: 0.08
+  - source: Cyra
+    target: Ava
+    trust: 0.10
+    affinity: 0.12
+seed_goals:
+  Ava:
+    - goal_type: maintain_group_alignment
+      priority: 0.62
+      source: scenario_seed
+      target:
+        zone: Commons
+  Ben:
+    - goal_type: secure_food_supply
+      priority: 0.70
+      source: scenario_seed
+      target:
+        resource_type: food
+        zone: Storage
+  Cyra:
+    - goal_type: maintain_safety
+      priority: 0.66
+      source: scenario_seed
+      target:
+        zone: Shelter
+world_events:
+  - tick: 2
+    key: food_shortage_notice
+    content: Storage inventory looks lower than expected.
+    payload:
+      valence: negative
+      urgency: 0.6
+      zone: Storage
+  - tick: 4
+    key: shelter_alarm
+    content: A sudden alarm makes Shelter feel unsafe.
+    payload:
+      valence: negative
+      urgency: 0.9
+      zone: Shelter
+  - tick: 6
+    key: aid_drop
+    content: A small aid drop reaches the Commons.
+    payload:
+      valence: positive
+      urgency: 0.5
+      zone: Commons
+seed_messages:
+  - tick: 0
+    sender: Ava
+    receiver: Ben
+    intent: propose
+    emotional_tone: supportive
+    content: Let's coordinate before food gets tight.

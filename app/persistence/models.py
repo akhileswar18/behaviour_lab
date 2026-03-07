@@ -38,6 +38,8 @@ class Agent(SQLModel, table=True):
 
 
 class AgentStateSnapshot(SQLModel, table=True):
+    __table_args__ = (Index("ix_agent_state_agent_tick", "agent_id", "tick_number"),)
+
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     agent_id: UUID = Field(index=True)
     tick_number: int = Field(default=0, index=True)
@@ -46,7 +48,68 @@ class AgentStateSnapshot(SQLModel, table=True):
     beliefs: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     energy: float = 100.0
     stress: float = 0.0
+    hunger: float = 0.0
+    safety_need: float = 0.0
+    social_need: float = 0.0
+    zone_id: Optional[UUID] = Field(default=None, index=True)
+    inventory: dict[str, int] = Field(default_factory=dict, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Goal(SQLModel, table=True):
+    __table_args__ = (Index("ix_goal_scenario_agent_status", "scenario_id", "agent_id", "status"),)
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    scenario_id: UUID = Field(index=True)
+    agent_id: UUID = Field(index=True)
+    goal_type: str
+    priority: float = 0.5
+    status: str = "active"
+    target: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    source: str = "scenario_seed"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Intention(SQLModel, table=True):
+    __table_args__ = (Index("ix_intention_scenario_agent_status", "scenario_id", "agent_id", "status"),)
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    scenario_id: UUID = Field(index=True)
+    agent_id: UUID = Field(index=True)
+    goal_id: Optional[UUID] = Field(default=None, index=True)
+    current_action_type: str = "wait"
+    status: str = "active"
+    rationale: str = ""
+    target_zone_id: Optional[UUID] = Field(default=None, index=True)
+    target_resource_id: Optional[UUID] = Field(default=None, index=True)
+    is_interruptible: bool = True
+    started_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Zone(SQLModel, table=True):
+    __table_args__ = (UniqueConstraint("scenario_id", "name", name="uq_zone_scenario_name"),)
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    scenario_id: UUID = Field(index=True)
+    name: str
+    zone_type: str = "commons"
+    zone_metadata: dict[str, Any] = Field(default_factory=dict, sa_column=Column("metadata", JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Resource(SQLModel, table=True):
+    __table_args__ = (Index("ix_resource_scenario_zone_type", "scenario_id", "zone_id", "resource_type"),)
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    scenario_id: UUID = Field(index=True)
+    zone_id: UUID = Field(index=True)
+    resource_type: str
+    quantity: int = 0
+    status: str = "available"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class Memory(SQLModel, table=True):
@@ -146,6 +209,11 @@ class DecisionLog(SQLModel, table=True):
     persona_factors: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     relationship_factors: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     world_event_factors: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    decision_source: str = "deterministic"
+    parser_status: str = "not_attempted"
+    fallback_reason: Optional[str] = None
+    prompt_summary: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    llm_metadata: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     message_id: Optional[UUID] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -185,8 +253,17 @@ class RunMetadata(SQLModel, table=True):
     source_scenario_id: Optional[UUID] = None
     run_kind: str = "baseline"
     variant_name: str = "baseline"
-    ticks_requested: int = 0
     persona_overrides: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    planning_overrides: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    world_overrides: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    policy_mode: str = "deterministic"
+    llm_provider: Optional[str] = None
+    llm_model: Optional[str] = None
+    llm_config_summary: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    decision_source_counts: dict[str, int] = Field(default_factory=dict, sa_column=Column(JSON))
+    fallback_count: int = 0
+    parse_failure_count: int = 0
+    ticks_requested: int = 0
     created_at: datetime = Field(default_factory=datetime.utcnow)
     started_at: datetime = Field(default_factory=datetime.utcnow)
     ended_at: Optional[datetime] = None
@@ -203,4 +280,9 @@ class RunComparisonSummary(SQLModel, table=True):
     decision_count_delta: int = 0
     message_count_delta: int = 0
     relationship_avg_trust_delta: float = 0.0
+    completed_goal_delta: int = 0
+    move_event_delta: int = 0
+    resource_event_delta: int = 0
+    fallback_count_delta: int = 0
+    llm_decision_delta: int = 0
     created_at: datetime = Field(default_factory=datetime.utcnow)

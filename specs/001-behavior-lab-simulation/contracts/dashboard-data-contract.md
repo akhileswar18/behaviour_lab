@@ -1,39 +1,56 @@
-# Dashboard Data Contract - Phase 2 Social Dynamics
+# Dashboard Data Contract - Phase 3 Goal-Directed Situated Behavior
 
 ## Purpose
 
-Define persisted-state query shapes for social observability in Phase 2.
+Define the persisted-state query shapes required to inspect goals, needs, plans, zones,
+resources, and interruptions in Phase 3.
 
 ## Views
 
-## Communication Feed View
-
-- Inputs: `scenario_id`, optional `agent_id`, `tick_from`, `tick_to`
-- Required fields:
-  - `message_id`, `tick_number`, `sender_agent_id`, `receiver_agent_id`,
-    `intent`, `emotional_tone`, `content`, `created_at`
-
-## Relationship State View
+## Agent Goal and Need View
 
 - Inputs: `scenario_id`, optional `agent_id`
 - Required fields:
-  - `source_agent_id`, `target_agent_id`, `trust_score`, `affinity_score`,
-    `stance`, `last_interaction_at`, `last_updated_tick`, `updated_at`
+  - `agent_id`
+  - `current_zone_id`
+  - `hunger`
+  - `safety_need`
+  - `social_need`
+  - `active_goal_type`
+  - `active_goal_priority`
+  - `active_intention`
+  - `intention_status`
 
-## Agent Detail Social Context View
+## Goal / Plan History View
 
-- Inputs: `scenario_id`, `agent_id`
-- Required sections:
-  - Persona factors used in latest decision
-  - Recent incoming/outgoing messages
-  - Relationship rows involving selected agent
-  - Recent/recalled memory records linked to social events
+- Inputs: `scenario_id`, optional `agent_id`, optional `status`
+- Required fields:
+  - `goal_id`, `goal_type`, `priority`, `status`, `target`, `source`
+  - `plan_state_id`, `current_action_type`, `rationale`, `target_zone_id`, `target_resource_id`
+
+## Zone Occupancy View
+
+- Inputs: `scenario_id`
+- Required fields:
+  - `zone_id`, `name`, `zone_type`, `occupants`, `visible_resources`
+
+## Resource Availability View
+
+- Inputs: `scenario_id`, optional `zone_id`, optional `resource_type`
+- Required fields:
+  - `resource_id`, `zone_id`, `resource_type`, `quantity`, `status`, `updated_at`
 
 ## Timeline/Event View
 
-- Inputs: `scenario_id`, optional `agent_id`, `tick range`, `event_type`
+- Inputs: `scenario_id`, optional `agent_id`, optional `zone_id`, tick range, `event_type`
 - Required event types:
-  - `world_event`, `decision`, `message`, `relationship_update`, `memory_write`
+  - `plan_change`
+  - `interruption`
+  - `move`
+  - `acquire`
+  - `consume`
+  - `resource_shortage`
+  - existing Phase 2 social event types
 - Required fields:
   - `event_id`, `tick_number`, `event_type`, `actor_agent_id`, `target_agent_id`,
     `content`, `payload`, `created_at`
@@ -42,13 +59,16 @@ Define persisted-state query shapes for social observability in Phase 2.
 
 The dashboard must support tracing:
 
-`scenario/world event -> decision -> message -> relationship update -> memory write`
+`need -> goal -> intention -> action -> world/social effect`
 
-for at least one selected agent path without reading source code.
+for a selected agent or scenario path without reading source code.
 
 ## Contract Rules
 
-- Dashboard reads persisted state only (no in-memory-only data).
-- Missing data returns empty lists, not null graph fragments.
-- All records expose identifiers required for cross-table traceability.
-- Sorting defaults: `tick_number ASC`, `created_at ASC`.
+- Dashboard reads persisted state only.
+- Missing data returns empty collections rather than implicit fallbacks.
+- Identifiers needed to correlate goals, plans, zones, resources, and timeline events must be present.
+- Sorting defaults:
+  - goals/plans: `updated_at DESC`
+  - resources: `updated_at DESC`
+  - timeline: `tick_number ASC`, `created_at ASC`

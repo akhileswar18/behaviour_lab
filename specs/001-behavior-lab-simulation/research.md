@@ -1,53 +1,49 @@
-# Research: Phase 2 Social Dynamics
+# Research: Phase 3 Goal-Directed Situated Behavior
 
-## Decision 1: Keep deterministic social interaction sequencing
+## Decision 1: Persist goals and intentions as first-class tables
 
-- Decision: Maintain fixed per-tick agent ordering and deterministic update rules for message,
-  relationship, and memory side effects.
-- Rationale: Reproducibility is required for behavioral experiments and debugging.
+- Decision: Store goals and active intentions in dedicated persisted models instead of deriving them from event history.
+- Rationale: Goal continuity and interruption handling require direct, queryable state.
 - Alternatives considered:
-  - Fully stochastic interaction policy first: richer emergence but weak explainability.
-  - Async message/event handling: more realistic timing but harder to debug in local MVP.
+  - Infer goals from recent decisions only: too opaque and fragile for replay/debugging.
+  - Store plans only in memory: violates observability and persistence requirements.
 
-## Decision 2: Use persisted social chain as source of truth
+## Decision 2: Use a zone-based world instead of freeform coordinates
 
-- Decision: Persist all message/relationship/decision transitions in DB and render dashboard from DB-only reads.
-- Rationale: Enables traceability and avoids hidden in-memory behavior.
+- Decision: Represent world grounding through named zones with simple occupancy and resource availability.
+- Rationale: Zones provide location-dependent behavior without introducing pathfinding or physics complexity.
 - Alternatives considered:
-  - In-memory message bus only: lower latency but breaks replayability.
-  - Hybrid in-memory + DB snapshots: increases complexity and drift risk.
+  - Continuous 2D coordinates: adds movement complexity without improving inspectability.
+  - No world grounding: insufficient for resource-aware or situated behavior.
 
-## Decision 3: Persona influence as explicit weighted policy
+## Decision 3: Keep needs lightweight and deterministic
 
-- Decision: Use transparent persona trait weights (cooperation, risk, communication style,
-  memory sensitivity) in decision policy outputs.
-- Rationale: Keeps behavior differences inspectable and testable.
+- Decision: Start with a small set of scalar needs such as `hunger`, `safety_need`, and optional `social_need`.
+- Rationale: A narrow, explicit need model is easier to tune, persist, and explain.
 - Alternatives considered:
-  - Free-form prompt-only persona behavior: less deterministic and weaker explainability.
-  - Rule explosion per persona archetype: too rigid and hard to maintain.
+  - Large emotional/drive systems: too complex for the current stage.
+  - Goal-only planning without needs: weaker explanation for plan changes and interruptions.
 
-## Decision 4: Relationship updates as evented state transitions
+## Decision 4: Layer planning on top of the existing decision loop
 
-- Decision: Relationship changes are calculated by explicit update rules and mirrored as
-  `relationship_update` SimulationEvents.
-- Rationale: Supports causal inspection and auditable social dynamics.
+- Decision: Introduce a deterministic planning policy that selects continue/defer/switch/interrupt before final action selection.
+- Rationale: This preserves the current simulation architecture and avoids a planner rewrite.
 - Alternatives considered:
-  - Hidden relationship writes without events: lower visibility.
-  - Batch-only relationship updates after run: delays feedback and complicates per-tick analysis.
+  - Replace the tick engine with a separate planner framework: unnecessary churn and higher failure risk.
+  - Hardcode plans into scenario config only: too rigid for studying replanning behavior.
 
-## Decision 5: Add scenario event injection layer
+## Decision 5: Model resource interactions through explicit action events
 
-- Decision: Introduce world/scenario events that can be scheduled per tick and consumed in the
-  same event stream as agent actions.
-- Rationale: Enables controlled social stimuli and comparison experiments.
+- Decision: Resource acquire/consume/move outcomes should emit persisted events and update resource quantities directly.
+- Rationale: Resource causality must be visible in the same replayable event stream as social effects.
 - Alternatives considered:
-  - No world events in Phase 2: limits experiment richness.
-  - Complex simulation world model: out of scope and violates simplicity constraints.
+  - Update resource counters silently: breaks auditability.
+  - Batch resource updates outside ticks: hides immediate action consequences.
 
-## Decision 6: Strengthen contracts for social observability
+## Decision 6: Treat urgent events as interrupt signals, not full replanners
 
-- Decision: Extend API/dashboard contracts to include communication feeds, relationship history,
-  scenario event injection, and filtered trace queries.
-- Rationale: Ensures implementation and visualization evolve together.
+- Decision: Urgent world events and severe needs trigger deterministic interruption rules that replace or defer the current intention.
+- Rationale: This produces clear, inspectable plan transitions while keeping rules understandable.
 - Alternatives considered:
-  - Ad hoc endpoint additions: faster initially but weaker consistency and testability.
+  - Freeform dynamic replanning: too magical for this phase.
+  - Ignoring interruptions: fails the stated Phase 3 objective.

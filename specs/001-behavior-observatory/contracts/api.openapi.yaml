@@ -1,0 +1,212 @@
+openapi: 3.1.0
+info:
+  title: Behavior Lab Phase 4 Decision Engine API
+  version: 0.4.1
+  description: Policy-mode aware simulation and observability contracts for deterministic/llm/hybrid routing.
+paths:
+  /scenarios/{scenario_id}/run:
+    post:
+      summary: Run scenario ticks with policy mode override
+      parameters:
+        - name: scenario_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunRequest'
+      responses:
+        '200':
+          description: Run result metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunResponse'
+  /scenarios/{scenario_id}/compare-rerun:
+    post:
+      summary: Clone and rerun baseline + variant with policy overrides
+      parameters:
+        - name: scenario_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompareRerunRequest'
+      responses:
+        '200':
+          description: Policy-aware comparison result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompareRerunResponse'
+  /scenarios/{scenario_id}/compare/{other_scenario_id}:
+    get:
+      summary: Compare two scenarios including fallback and llm deltas
+      parameters:
+        - name: scenario_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: other_scenario_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Comparison summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scenario_id_a:
+                    type: string
+                    format: uuid
+                  scenario_id_b:
+                    type: string
+                    format: uuid
+                  base_policy_mode:
+                    $ref: '#/components/schemas/PolicyMode'
+                  variant_policy_mode:
+                    $ref: '#/components/schemas/PolicyMode'
+                  metrics:
+                    type: object
+                    additionalProperties: true
+components:
+  schemas:
+    PolicyMode:
+      type: string
+      enum: [deterministic, llm, hybrid]
+    LlmConfig:
+      type: object
+      properties:
+        provider:
+          type: string
+        model:
+          type: string
+        endpoint:
+          type: string
+        timeout_seconds:
+          type: number
+          minimum: 0.1
+        max_tokens:
+          type: integer
+          minimum: 32
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 2
+    RunRequest:
+      type: object
+      properties:
+        ticks:
+          type: integer
+          minimum: 1
+        policy_mode:
+          $ref: '#/components/schemas/PolicyMode'
+        llm_config:
+          $ref: '#/components/schemas/LlmConfig'
+      required: [ticks]
+    TickResult:
+      type: object
+      properties:
+        tick_number:
+          type: integer
+        status:
+          type: string
+        processed_agents:
+          type: integer
+        events_created:
+          type: integer
+        messages_created:
+          type: integer
+        duration_ms:
+          type: integer
+    RunResponse:
+      type: object
+      properties:
+        scenario_id:
+          type: string
+          format: uuid
+        start_tick:
+          type: integer
+        end_tick:
+          type: integer
+        policy_mode:
+          $ref: '#/components/schemas/PolicyMode'
+        fallback_count:
+          type: integer
+        llm_decision_count:
+          type: integer
+        deterministic_decision_count:
+          type: integer
+        tick_results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TickResult'
+      required:
+        - scenario_id
+        - start_tick
+        - end_tick
+        - policy_mode
+        - fallback_count
+        - llm_decision_count
+        - deterministic_decision_count
+        - tick_results
+    CompareRerunRequest:
+      type: object
+      properties:
+        ticks:
+          type: integer
+          minimum: 1
+        variant_name:
+          type: string
+        base_policy_mode:
+          $ref: '#/components/schemas/PolicyMode'
+        variant_policy_mode:
+          $ref: '#/components/schemas/PolicyMode'
+        base_llm_config:
+          $ref: '#/components/schemas/LlmConfig'
+        variant_llm_config:
+          $ref: '#/components/schemas/LlmConfig'
+        persona_overrides:
+          type: object
+          additionalProperties: true
+        planning_overrides:
+          type: object
+          additionalProperties: true
+        world_overrides:
+          type: object
+          additionalProperties: true
+      required: [ticks]
+    CompareRerunResponse:
+      type: object
+      properties:
+        base_scenario_id:
+          type: string
+          format: uuid
+        variant_scenario_id:
+          type: string
+          format: uuid
+        base_policy_mode:
+          $ref: '#/components/schemas/PolicyMode'
+        variant_policy_mode:
+          $ref: '#/components/schemas/PolicyMode'
+        comparison:
+          type: object
+          additionalProperties: true

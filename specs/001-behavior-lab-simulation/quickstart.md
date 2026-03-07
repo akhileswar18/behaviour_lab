@@ -1,4 +1,4 @@
-# Quickstart: Multi-Agent Behavior Lab
+# Quickstart: Phase 3 Goal-Directed Situated Behavior
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ uv sync
 
 ```bash
 python -m venv .venv
-. .venv/Scripts/activate  # Windows PowerShell: .\.venv\Scripts\Activate.ps1
+. .venv/Scripts/activate
 pip install -e .[dev]
 ```
 
@@ -29,18 +29,20 @@ Create `.env` from `.env.example` and set:
 - `DATABASE_URL=sqlite:///./data/behavior_lab.db`
 - `LOG_LEVEL=INFO`
 
-## 3. Initialize database and seed sample scenario
+## 3. Initialize database and seed a situated scenario
 
 ```bash
-python -m app.persistence.seed --scenario sample_social_tension
+python -m app.persistence.init_db
+python -m app.persistence.seed --scenario sample_goal_resource_lab
 ```
 
 Expected outcome:
-- One scenario created
-- 3 seeded agents with distinct personas
-- Initial relationship records
-- Scheduled world events for social tension/opportunity
-- Seeded structured message with intent/tone
+
+- one scenario with 3 agents
+- 3 zones with different local opportunities
+- simple resources available in selected zones
+- seeded goals/needs and starting locations
+- at least one urgent event scheduled for interruption testing
 
 ## 4. Run API
 
@@ -48,25 +50,13 @@ Expected outcome:
 uv run uvicorn app.api.main:app --reload --port 8000
 ```
 
-Health check:
-
-```bash
-curl http://127.0.0.1:8000/health
-```
-
 ## 5. Run dashboard
-
-In a second terminal:
 
 ```bash
 uv run streamlit run app/dashboard/main.py --server.port 8501
 ```
 
-Open `http://127.0.0.1:8501`.
-
-## 6. Execute simulation ticks
-
-Run 10 ticks:
+## 6. Execute ticks
 
 ```bash
 curl -X POST http://127.0.0.1:8000/scenarios/<scenario_id>/run \
@@ -74,54 +64,53 @@ curl -X POST http://127.0.0.1:8000/scenarios/<scenario_id>/run \
   -d '{"ticks":10}'
 ```
 
-## 7. Validate Phase Goals
+## 7. Validate User Story 1
 
-- Agent roster visible with persona and current state.
-- Communication feed shows structured messages (intent, tone, sender/receiver).
-- Timeline displays `world_event`, `decision`, `message`, and `relationship_update` events by tick.
-- Memory and decision history visible per agent with rationale factors.
-- Relationship updates visible after interactions with trust/affinity and stance changes.
+- Agents show active goals and current intentions.
+- Needs change over time.
+- At least one goal remains active across multiple ticks.
+- Agent detail view shows needs, location, active goal, and active intention.
 
-## 8. Social inspection flow (US1 + US2)
+## 8. Validate User Story 2
 
-1. Open dashboard pages in this order:
-   - `Agents` for persona and decision factors
-   - `Communication` for message flow
-   - `Relationships` for trust/affinity changes
-   - `Timeline` for event causality chain
-2. In Timeline filters, set:
-   - `event_type=world_event` then `event_type=relationship_update`
-   - `tick_from=1`, `tick_to=5`
-3. Confirm visible causal path:
-   - world event -> decision -> message -> relationship update -> memory trace
+- Zone occupancy changes over time for at least one agent.
+- Resources are acquired or consumed and quantities change.
+- Timeline shows `plan_change`, `move`, `acquire`/`consume`, and `interruption` events.
+- At least one urgent event or severe need interrupts an existing intention.
 
-## 9. Run tests
+## 9. Validate User Story 3
+
+Run a variant comparison:
+
+```bash
+curl -X POST http://127.0.0.1:8000/scenarios/<scenario_id>/compare-rerun \
+  -H "Content-Type: application/json" \
+  -d '{"ticks":5,"variant_name":"hungry-ben","planning_overrides":{"Ben":{"hunger":0.95}},"world_overrides":{"Storage":{"food":0}}}'
+```
+
+Expected outcome:
+
+- response contains `completed_goal_delta`, `move_event_delta`, and `resource_event_delta`
+- comparison dashboard shows changed outcome counts across baseline and variant runs
+
+## 10. Dashboard inspection order
+
+1. `Agents`: inspect needs, current goal, active intention, location, and inventory.
+2. `Goals`: inspect goal status and plan history.
+3. `Zones`: inspect occupancy and local opportunities.
+4. `Resources`: inspect quantity changes over time.
+5. `Timeline`: verify need -> goal -> plan -> action -> effect causality.
+6. `Comparison`: inspect deterministic differences after overrides.
+
+## 11. Run tests
 
 ```bash
 uv run pytest
 ```
 
-## 10. Run US3 variant comparison
-
-Run API comparison endpoint:
-
-```bash
-curl -X POST http://127.0.0.1:8000/scenarios/<scenario_id>/compare-rerun \
-  -H "Content-Type: application/json" \
-  -d '{"ticks":3,"variant_name":"risk-heavy-ava","persona_overrides":{"Ava":{"risk_tolerance":0.95,"cooperation_tendency":0.2}}}'
-```
-
-Expected outcome:
-- Response includes `base_scenario_id`, `variant_scenario_id`, and `comparison.differences`.
-- `comparison.differences` includes `decision_count_delta`, `message_count_delta`, and `relationship_avg_trust_delta`.
-
-UI path:
-- Open dashboard `Comparison` page.
-- Provide base scenario ID, overrides JSON, and ticks.
-- Run comparison and inspect delta table.
-
 ## Troubleshooting
 
-- If SQLite file lock occurs, stop duplicate API/dashboard processes.
-- If dashboard appears stale, refresh filters and ensure API tick run completed.
-- If no events appear, verify scenario seed succeeded and run endpoint returned tick results.
+- If agents never move, verify zones and target resources are seeded correctly.
+- If resources never change, confirm resource actions are permitted in the agent's current zone.
+- If interruptions never fire, verify urgent events or severe-need thresholds exist in the scenario.
+- If comparison deltas remain flat, increase the need override or reduce a key resource quantity.

@@ -53,6 +53,7 @@ class SocialRepository:
         tick_to: int | None = None,
         agent_id: UUID | None = None,
         event_type: str | None = None,
+        zone_id: UUID | None = None,
     ) -> list[SimulationEvent]:
         statement = select(SimulationEvent).where(SimulationEvent.scenario_id == scenario_id)
         if tick_from is not None:
@@ -67,7 +68,26 @@ class SocialRepository:
         if event_type is not None:
             statement = statement.where(SimulationEvent.event_type == event_type)
         statement = statement.order_by(SimulationEvent.tick_number, SimulationEvent.created_at)
-        return list(self.session.exec(statement))
+        rows = list(self.session.exec(statement))
+        if zone_id is not None:
+            rows = [row for row in rows if str(row.payload.get("zone_id", "")) == str(zone_id)]
+        return rows
+
+    def list_agent_events(
+        self,
+        scenario_id: UUID,
+        agent_id: UUID,
+        tick_from: int | None = None,
+        tick_to: int | None = None,
+        limit: int = 20,
+    ) -> list[SimulationEvent]:
+        rows = self.list_timeline(
+            scenario_id=scenario_id,
+            tick_from=tick_from,
+            tick_to=tick_to,
+            agent_id=agent_id,
+        )
+        return rows[:limit]
 
     def get_relationship(
         self, scenario_id: UUID, source_agent_id: UUID, target_agent_id: UUID

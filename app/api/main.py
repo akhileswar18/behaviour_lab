@@ -5,7 +5,20 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.api.logging import configure_logging
-from app.api.routes import agents, health, relationships, scenarios, simulation, timeline
+from app.api.routes import (
+    agents,
+    analytics_agents,
+    analytics_social,
+    analytics_world,
+    goals,
+    health,
+    relationships,
+    resources,
+    scenarios,
+    simulation,
+    timeline,
+    zones,
+)
 from app.persistence.init_db import init_db
 from app.schemas.settings import get_settings
 
@@ -25,7 +38,13 @@ app.include_router(scenarios.router)
 app.include_router(simulation.router)
 app.include_router(timeline.router)
 app.include_router(agents.router)
+app.include_router(analytics_agents.router)
+app.include_router(analytics_social.router)
+app.include_router(analytics_world.router)
 app.include_router(relationships.router)
+app.include_router(goals.router)
+app.include_router(zones.router)
+app.include_router(resources.router)
 
 logger = logging.getLogger(__name__)
 
