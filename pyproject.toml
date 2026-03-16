@@ -13,7 +13,8 @@ dependencies = [
   "pydantic-settings>=2.4.0",
   "pyyaml>=6.0.2",
   "requests>=2.32.0",
-  "pandas>=2.2.0"
+  "pandas>=2.2.0",
+  "plotly>=5.24.0"
 ]
 
 [project.optional-dependencies]
