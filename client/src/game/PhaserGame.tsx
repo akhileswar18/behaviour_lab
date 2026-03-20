@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { useEffect, useRef } from "react";
 
+import type { RenderAgentState } from "../hooks/useSimulationState";
 import { Preloader } from "./scenes/Preloader";
 import { WorldScene } from "./scenes/WorldScene";
 import type { WorldSnapshot } from "../types/world";
@@ -10,6 +11,7 @@ interface PhaserGameProps {
   scenarioId: string | null;
   snapshot: WorldSnapshot | null;
   previousSnapshot: WorldSnapshot | null;
+  renderAgents: RenderAgentState[];
   selectedAgentId: string | null;
   mode: "live" | "replay";
   followSelectedAgent: boolean;
@@ -21,6 +23,7 @@ export function PhaserGame({
   scenarioId,
   snapshot,
   previousSnapshot,
+  renderAgents,
   selectedAgentId,
   mode,
   followSelectedAgent,
@@ -58,11 +61,12 @@ export function PhaserGame({
     worldSceneRef.current?.syncSnapshot(
       previousSnapshot,
       snapshot,
+      renderAgents,
       selectedAgentId,
       mode,
       followSelectedAgent,
     );
-  }, [followSelectedAgent, mode, previousSnapshot, selectedAgentId, snapshot]);
+  }, [followSelectedAgent, mode, previousSnapshot, renderAgents, selectedAgentId, snapshot]);
 
   return <div ref={hostRef} style={{ width: "100%", height: "100%" }} />;
 }

@@ -74,12 +74,24 @@ Use the existing embodied-world seed and tick workflow from Phase 5:
 Check for the following visual outcomes:
 
 - the world shows a furnished pixel-art house instead of outlined rectangles
+- the browser can show the full static house before any new ticks arrive
+- room shapes and door openings are understandable without reading debug labels
 - agents appear as distinct animated characters instead of circles
 - movement is smooth between ticks rather than snapping instantly
 - speech and thought overlays are styled and readable
 - the selected-agent panel shows needs bars, goal card, decision log, and conversation feed
 - day/night tinting and the minimap remain readable
 - if an asset is missing, the world falls back gracefully instead of failing to render
+
+## Phase 3 Static-World And Fallback Checks
+
+Use these checks when validating the real-house render path and the fallback path:
+
+1. Start the frontend with the normal assets in place and confirm the browser shows the furnished five-room house immediately after load.
+2. Confirm the kitchen, living room, bedroom, bathroom, and commons corridor are all visually distinct without relying on the old rectangle labels.
+3. Temporarily rename `client/public/assets/maps/house.json` or `client/public/assets/tilesets/interiors.png` and refresh the page.
+4. Confirm the scene does not crash, shows the fallback layout, and surfaces a visible fallback message instead of a blank canvas.
+5. Restore the asset file and confirm the real tilemap render path returns.
 
 ## Suggested Validation Pass
 

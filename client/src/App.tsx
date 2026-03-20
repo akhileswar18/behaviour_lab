@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { PhaserGame } from "./game/PhaserGame";
 import { useReplay } from "./hooks/useReplay";
-import { useSimulationState } from "./hooks/useSimulationState";
+import { buildSelectedAgentView, useSimulationState } from "./hooks/useSimulationState";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { AgentDetailPanel } from "./panels/AgentDetailPanel";
 import { TimelineBar } from "./panels/TimelineBar";
@@ -15,6 +15,7 @@ export function App() {
     ack,
     handleMessage,
     previousSnapshot,
+    renderAgents,
     selectedAgentId,
     setSelectedAgentId,
     snapshot,
@@ -36,6 +37,10 @@ export function App() {
   const visibleSelectedAgent = useMemo(
     () =>
       visibleSnapshot?.agents.find((agent) => agent.agent_id === selectedAgentId) ?? null,
+    [selectedAgentId, visibleSnapshot],
+  );
+  const visibleSelectedAgentView = useMemo(
+    () => buildSelectedAgentView(visibleSnapshot, selectedAgentId),
     [selectedAgentId, visibleSnapshot],
   );
 
@@ -149,6 +154,7 @@ export function App() {
           scenarioId={scenarioId}
           snapshot={visibleSnapshot}
           previousSnapshot={visiblePreviousSnapshot}
+          renderAgents={renderAgents}
           selectedAgentId={selectedAgentId}
           mode={replay.mode}
           followSelectedAgent={replay.followSelectedAgent}
@@ -157,7 +163,7 @@ export function App() {
             sendJson({ schema_version: "1.0", type: "agent_selected", agent_id: agentId });
           }}
         />
-        <AgentDetailPanel agent={visibleSelectedAgent} />
+        <AgentDetailPanel detail={visibleSelectedAgentView} />
       </main>
       <TimelineBar
         currentTick={visibleTickNumber}

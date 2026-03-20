@@ -19,12 +19,12 @@
 
 **Purpose**: Complete the missing asset and map-design work before any renderer code changes begin.
 
-- [ ] T001 Download and place the chosen 16x16 indoor tileset in `client/public/assets/tilesets/interiors.png` [Deps: none] [Output: indoor tileset PNG available at the final Phaser load path]
-- [ ] T002 [P] Create or export three distinct 16x16 character spritesheets in `client/public/assets/tilesets/agents/agent_1.png`, `client/public/assets/tilesets/agents/agent_2.png`, and `client/public/assets/tilesets/agents/agent_3.png` [Deps: none] [Output: three directional walk-cycle spritesheets ready for Phaser loading]
-- [ ] T003 Design the furnished 40x30 five-room house in `maps/house.json` using Tiled layers `floor`, `walls`, `furniture`, `furniture_upper`, `collision`, and `objects` with zone rectangles for `kitchen`, `bedroom`, `living_room`, `bathroom`, and `commons` [Deps: T001] [Output: real Tiled JSON house map saved in the shared backend path]
-- [ ] T004 Copy the finalized Tiled export from `maps/house.json` to `client/public/assets/maps/house.json` [Deps: T003] [Output: identical client and shared house map JSON assets]
-- [ ] T005 [P] Document source, author, license, and download URL for every visual asset in `client/public/assets/ATTRIBUTION.md` [Deps: T001, T002] [Output: complete attribution record for tileset and character art]
-- [ ] T006 Verify `maps/house.json` loads cleanly against the existing parser contract in `app/simulation/tilemap_loader.py` and existing embodied tests [Deps: T003, T004] [Output: confirmed backend compatibility or a documented note if a minimal parser tweak is truly required]
+- [X] T001 Download and place the chosen 16x16 indoor tileset in `client/public/assets/tilesets/interiors.png` [Deps: none] [Output: indoor tileset PNG available at the final Phaser load path]
+- [X] T002 [P] Create or export three distinct 16x16 character spritesheets in `client/public/assets/tilesets/agents/agent_1.png`, `client/public/assets/tilesets/agents/agent_2.png`, and `client/public/assets/tilesets/agents/agent_3.png` [Deps: none] [Output: three directional walk-cycle spritesheets ready for Phaser loading]
+- [X] T003 Design the furnished 40x30 five-room house in `maps/house.json` using Tiled layers `floor`, `walls`, `furniture`, `furniture_upper`, `collision`, and `objects` with zone rectangles for `kitchen`, `bedroom`, `living_room`, `bathroom`, and `commons` [Deps: T001] [Output: real Tiled JSON house map saved in the shared backend path]
+- [X] T004 Copy the finalized Tiled export from `maps/house.json` to `client/public/assets/maps/house.json` [Deps: T003] [Output: identical client and shared house map JSON assets]
+- [X] T005 [P] Document source, author, license, and download URL for every visual asset in `client/public/assets/ATTRIBUTION.md` [Deps: T001, T002] [Output: complete attribution record for tileset and character art]
+- [X] T006 Verify `maps/house.json` loads cleanly against the existing parser contract in `app/simulation/tilemap_loader.py` and existing embodied tests [Deps: T003, T004] [Output: confirmed backend compatibility or a documented note if a minimal parser tweak is truly required]
 
 **Checkpoint**: Opening `maps/house.json` in Tiled shows a furnished five-room house, all PNG assets exist in their final directories, and the backend can parse the exported map without errors.
 
@@ -38,15 +38,15 @@
 
 ### Tests for Foundational Rendering
 
-- [ ] T007 [P] Add static tilemap scene coverage in `client/tests/world-scene.test.ts` for real-map loading, required layer creation, and rectangle fallback behavior [Deps: T004] [Output: failing scene-level tests for Tiled JSON loading and fallback rendering]
-- [ ] T008 [P] Validate `client/public/assets/maps/house.json` against `specs/003-embodied-world-visual-fix/contracts/tilemap-format-contract.md` [Deps: T004] [Output: confirmed layer names, dimensions, and zone metadata before renderer edits]
+- [X] T007 [P] Add static tilemap scene coverage in `client/tests/world-scene.test.ts` for real-map loading, required layer creation, and rectangle fallback behavior [Deps: T004] [Output: failing scene-level tests for Tiled JSON loading and fallback rendering]
+- [X] T008 [P] Validate `client/public/assets/maps/house.json` against `specs/003-embodied-world-visual-fix/contracts/tilemap-format-contract.md` [Deps: T004] [Output: confirmed layer names, dimensions, and zone metadata before renderer edits]
 
 ### Implementation for Foundational Rendering
 
-- [ ] T009 Update `client/src/game/scenes/Preloader.ts` to load `client/public/assets/maps/house.json`, `client/public/assets/tilesets/interiors.png`, and `client/public/assets/tilesets/agents/agent_1.png`, `client/public/assets/tilesets/agents/agent_2.png`, `client/public/assets/tilesets/agents/agent_3.png` with Phaser asset loaders [Deps: T002, T004, T007] [Output: Phaser preloader caches the real map, tileset image, and character spritesheets]
-- [ ] T010 Replace placeholder room drawing in `client/src/game/scenes/WorldScene.ts` with `this.make.tilemap({ key: "world-map" })`, `map.addTilesetImage(...)`, and tilemap layer creation for `floor`, `walls`, `furniture`, and `furniture_upper` [Deps: T009] [Output: the world scene renders the furnished pixel-art house instead of rectangles]
-- [ ] T011 Configure collision and camera bounds in `client/src/game/scenes/WorldScene.ts` from the `collision` layer and real tilemap dimensions [Deps: T010] [Output: collision tiles and camera limits align to the real house map]
-- [ ] T012 Run browser verification for static map rendering through `client/src/game/scenes/Preloader.ts` and `client/src/game/scenes/WorldScene.ts` [Deps: T011] [Output: confirmed furnished house renders correctly with no agent work yet]
+- [X] T009 Update `client/src/game/scenes/Preloader.ts` to load `client/public/assets/maps/house.json`, `client/public/assets/tilesets/interiors.png`, and `client/public/assets/tilesets/agents/agent_1.png`, `client/public/assets/tilesets/agents/agent_2.png`, `client/public/assets/tilesets/agents/agent_3.png` with Phaser asset loaders [Deps: T002, T004, T007] [Output: Phaser preloader caches the real map, tileset image, and character spritesheets]
+- [X] T010 Replace placeholder room drawing in `client/src/game/scenes/WorldScene.ts` with `this.make.tilemap({ key: "world-map" })`, `map.addTilesetImage(...)`, and tilemap layer creation for `floor`, `walls`, `furniture`, and `furniture_upper` [Deps: T009] [Output: the world scene renders the furnished pixel-art house instead of rectangles]
+- [X] T011 Configure collision and camera bounds in `client/src/game/scenes/WorldScene.ts` from the `collision` layer and real tilemap dimensions [Deps: T010] [Output: collision tiles and camera limits align to the real house map]
+- [X] T012 Run browser verification for static map rendering through `client/src/game/scenes/Preloader.ts` and `client/src/game/scenes/WorldScene.ts` [Deps: T011] [Output: confirmed furnished house renders correctly with no agent work yet]
 
 **Checkpoint**: Opening the browser shows the pixel-art house with visible floors, walls, furniture, and camera bounds, with no fallback rectangles in the happy path.
 
@@ -60,13 +60,13 @@
 
 ### Tests for User Story 1
 
-- [ ] T013 [P] [US1] Add fallback and static-world verification notes to `specs/003-embodied-world-visual-fix/quickstart.md` for missing art, zone-only mode, and room readability checks [Deps: T012] [Output: explicit US1 validation checklist in the feature quickstart]
-- [ ] T014 [P] [US1] Add browser-scene regression assertions in `client/tests/world-scene.test.ts` for map bounds, layer order, and graceful asset fallback [Deps: T007, T011] [Output: failing US1 coverage for readable world rendering and fallback safety]
+- [X] T013 [P] [US1] Add fallback and static-world verification notes to `specs/003-embodied-world-visual-fix/quickstart.md` for missing art, zone-only mode, and room readability checks [Deps: T012] [Output: explicit US1 validation checklist in the feature quickstart]
+- [X] T014 [P] [US1] Add browser-scene regression assertions in `client/tests/world-scene.test.ts` for map bounds, layer order, and graceful asset fallback [Deps: T007, T011] [Output: failing US1 coverage for readable world rendering and fallback safety]
 
 ### Implementation for User Story 1
 
-- [ ] T015 [US1] Finalize room readability, layer ordering, and fallback signaling in `client/src/game/scenes/WorldScene.ts` [Deps: T014] [Output: stable real-house render path plus clear fallback behavior when map assets are missing]
-- [ ] T016 [US1] Update `client/src/game/scenes/Preloader.ts` to emit consistent load keys and fallback warnings for missing map or tileset assets [Deps: T015] [Output: predictable loader behavior for real-world and fallback map rendering]
+- [X] T015 [US1] Finalize room readability, layer ordering, and fallback signaling in `client/src/game/scenes/WorldScene.ts` [Deps: T014] [Output: stable real-house render path plus clear fallback behavior when map assets are missing]
+- [X] T016 [US1] Update `client/src/game/scenes/Preloader.ts` to emit consistent load keys and fallback warnings for missing map or tileset assets [Deps: T015] [Output: predictable loader behavior for real-world and fallback map rendering]
 
 **Checkpoint**: User Story 1 is independently verifiable: the embodied viewer shows a legible furnished house and degrades gracefully if required visual assets are missing.
 
@@ -80,14 +80,14 @@
 
 ### Tests for User Story 2
 
-- [ ] T017 [P] [US2] Add sprite identity and tile-to-pixel mapping tests in `client/tests/agent-sprite.test.ts` [Deps: T009, T011] [Output: failing coverage for sprite-key assignment, scale, and tile coordinate conversion]
-- [ ] T018 [P] [US2] Extend `client/tests/useSimulationState.test.ts` to verify stable agent ordering and render-state mapping for distinct character selection [Deps: T009] [Output: failing state-mapping tests for character identity and selection continuity]
+- [X] T017 [P] [US2] Add sprite identity and tile-to-pixel mapping tests in `client/tests/agent-sprite.test.ts` [Deps: T009, T011] [Output: failing coverage for sprite-key assignment, scale, and tile coordinate conversion]
+- [X] T018 [P] [US2] Extend `client/tests/useSimulationState.test.ts` to verify stable agent ordering and render-state mapping for distinct character selection [Deps: T009] [Output: failing state-mapping tests for character identity and selection continuity]
 
 ### Implementation for User Story 2
 
-- [ ] T019 [US2] Replace circle markers with sprite-based agents and animation registration in `client/src/game/sprites/AgentSprite.ts` [Deps: T017] [Output: agents render as 16x16 sprites scaled to 48px with interactive selection preserved]
-- [ ] T020 [US2] Map agent identities to spritesheet keys and spawn them on the real tilemap in `client/src/game/scenes/WorldScene.ts` [Deps: T018, T019] [Output: each live agent appears as a distinct pixel character at the correct tile position]
-- [ ] T021 [US2] Run live browser verification for sprite rendering through `client/src/game/sprites/AgentSprite.ts` and `client/src/game/scenes/WorldScene.ts` [Deps: T020] [Output: confirmed three-agent scenario shows distinct pixel characters instead of circles]
+- [X] T019 [US2] Replace circle markers with sprite-based agents and animation registration in `client/src/game/sprites/AgentSprite.ts` [Deps: T017] [Output: agents render as 16x16 sprites scaled to 48px with interactive selection preserved]
+- [X] T020 [US2] Map agent identities to spritesheet keys and spawn them on the real tilemap in `client/src/game/scenes/WorldScene.ts` [Deps: T018, T019] [Output: each live agent appears as a distinct pixel character at the correct tile position]
+- [X] T021 [US2] Run live browser verification for sprite rendering through `client/src/game/sprites/AgentSprite.ts` and `client/src/game/scenes/WorldScene.ts` [Deps: T020] [Output: confirmed three-agent scenario shows distinct pixel characters instead of circles]
 
 **Checkpoint**: Browser shows the furnished house populated by distinct pixel-art characters that remain selectable during live observation.
 
@@ -101,15 +101,15 @@
 
 ### Tests for User Story 3
 
-- [ ] T022 [P] [US3] Add overlay text formatting and truncation tests in `client/tests/overlay-ui.test.ts` [Deps: T020] [Output: failing coverage for 60-character truncation, wrapping, and first-sentence cleanup]
-- [ ] T023 [P] [US3] Extend `client/tests/useSimulationState.test.ts` to validate speech and thought payload normalization for overlay display [Deps: T018] [Output: failing state tests for rationale selection and debug-string cleanup]
+- [X] T022 [P] [US3] Add overlay text formatting and truncation tests in `client/tests/overlay-ui.test.ts` [Deps: T020] [Output: failing coverage for 60-character truncation, wrapping, and first-sentence cleanup]
+- [X] T023 [P] [US3] Extend `client/tests/useSimulationState.test.ts` to validate speech and thought payload normalization for overlay display [Deps: T018] [Output: failing state tests for rationale selection and debug-string cleanup]
 
 ### Implementation for User Story 3
 
-- [ ] T024 [US3] Rewrite `client/src/game/ui/SpeechBubble.ts` with Phaser graphics, wrapped text, truncation, and auto-fade behavior [Deps: T022] [Output: styled speech bubbles with rounded backgrounds, tails, and bounded text]
-- [ ] T025 [US3] Rewrite `client/src/game/ui/ThoughtCloud.ts` with distinct cloud-style visuals and bounded rationale text [Deps: T022] [Output: thought overlays visually distinct from speech bubbles]
-- [ ] T026 [US3] Update `client/src/game/ui/InteractionArc.ts` to render dashed animated conversation links instead of solid lines [Deps: T024, T025] [Output: warm animated interaction arcs for active conversations]
-- [ ] T027 [US3] Normalize overlay content selection and scene update flow in `client/src/game/scenes/WorldScene.ts` [Deps: T023, T024, T025, T026] [Output: the scene displays concise speech and thought text rather than raw debug strings]
+- [X] T024 [US3] Rewrite `client/src/game/ui/SpeechBubble.ts` with Phaser graphics, wrapped text, truncation, and auto-fade behavior [Deps: T022] [Output: styled speech bubbles with rounded backgrounds, tails, and bounded text]
+- [X] T025 [US3] Rewrite `client/src/game/ui/ThoughtCloud.ts` with distinct cloud-style visuals and bounded rationale text [Deps: T022] [Output: thought overlays visually distinct from speech bubbles]
+- [X] T026 [US3] Update `client/src/game/ui/InteractionArc.ts` to render dashed animated conversation links instead of solid lines [Deps: T024, T025] [Output: warm animated interaction arcs for active conversations]
+- [X] T027 [US3] Normalize overlay content selection and scene update flow in `client/src/game/scenes/WorldScene.ts` [Deps: T023, T024, T025, T026] [Output: the scene displays concise speech and thought text rather than raw debug strings]
 
 **Checkpoint**: Conversations appear as styled speech bubbles, thoughts render as cloud overlays, and interaction arcs visibly connect active speakers.
 
@@ -123,13 +123,13 @@
 
 ### Tests for User Story 4
 
-- [ ] T028 [P] [US4] Add selected-agent view-model tests in `client/tests/useSimulationState.test.ts` for ordered needs, decision-log limits, and recent conversation extraction [Deps: T018] [Output: failing state tests for panel-ready selected-agent data]
-- [ ] T029 [P] [US4] Add styled panel rendering coverage in `client/tests/agent-detail-panel.test.tsx` [Deps: T028] [Output: failing UI tests for needs bars, goal card, decision log, and conversation feed rendering]
+- [X] T028 [P] [US4] Add selected-agent view-model tests in `client/tests/useSimulationState.test.ts` for ordered needs, decision-log limits, and recent conversation extraction [Deps: T018] [Output: failing state tests for panel-ready selected-agent data]
+- [X] T029 [P] [US4] Add styled panel rendering coverage in `client/tests/agent-detail-panel.test.tsx` [Deps: T028] [Output: failing UI tests for needs bars, goal card, decision log, and conversation feed rendering]
 
 ### Implementation for User Story 4
 
-- [ ] T030 [US4] Rewrite `client/src/panels/AgentDetailPanel.tsx` with dark-theme header, colored needs bars, goal card, decision log, and conversation feed [Deps: T029] [Output: a structured side panel replacing the plain-text agent details]
-- [ ] T031 [US4] Tune selected-agent ordering, tick labels, and rationale excerpts in `client/src/panels/AgentDetailPanel.tsx` [Deps: T030] [Output: panel content remains readable and chronologically useful during live observation]
+- [X] T030 [US4] Rewrite `client/src/panels/AgentDetailPanel.tsx` with dark-theme header, colored needs bars, goal card, decision log, and conversation feed [Deps: T029] [Output: a structured side panel replacing the plain-text agent details]
+- [X] T031 [US4] Tune selected-agent ordering, tick labels, and rationale excerpts in `client/src/panels/AgentDetailPanel.tsx` [Deps: T030] [Output: panel content remains readable and chronologically useful during live observation]
 
 **Checkpoint**: Clicking an agent shows a polished research-friendly detail panel with colored bars and scrollable recent context instead of raw text blocks.
 
