@@ -9,6 +9,8 @@ Auto-generated from all feature plans. Last updated: 2026-03-05
 - Python 3.11+ + FastAPI, Streamlit, SQLModel, Pydantic, pandas, pytest, lightweight charting support for gauges/graphs/maps (001-behavior-observatory)
 - SQLite single-file persisted simulation state (001-behavior-observatory)
 - Python 3.11+ + FastAPI, Streamlit, SQLModel, Pydantic, pydantic-settings, pytest, httpx/openai-compatible client abstraction (001-behavior-observatory)
+- TypeScript/JavaScript (frontend), Python 3.11+ (backend unchanged) + Frontend: Phaser 3, React 18, Vite, TypeScript; Backend compatibility only: FastAPI, Pydantic, pytest (003-embodied-world-visual-fix)
+- Static Tiled JSON and PNG assets in `client/public/assets/`; existing SQLite and backend persistence remain unchanged (003-embodied-world-visual-fix)
 
 - Python 3.11+ + FastAPI, Streamlit, SQLModel, Pydantic, pydantic-settings, pytest (001-behavior-lab-simulation)
 
@@ -28,9 +30,9 @@ cd src; pytest; ruff check .
 Python 3.11+: Follow standard conventions
 
 ## Recent Changes
+- 003-embodied-world-visual-fix: Added TypeScript/JavaScript (frontend), Python 3.11+ (backend unchanged) + Frontend: Phaser 3, React 18, Vite, TypeScript; Backend compatibility only: FastAPI, Pydantic, pytest
 - 001-behavior-observatory: Added Python 3.11+ + FastAPI, Streamlit, SQLModel, Pydantic, pydantic-settings, pytest, httpx/openai-compatible client abstraction
 - 001-behavior-observatory: Added Python 3.11+ + FastAPI, Streamlit, SQLModel, Pydantic, pandas, pytest
-- 001-behavior-observatory: Added Python 3.11+ + FastAPI, Streamlit, SQLModel, Pydantic, pandas, pytest, lightweight charting support for gauges/graphs/maps
 
 
 <!-- MANUAL ADDITIONS START -->
