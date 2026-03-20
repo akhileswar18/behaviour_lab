@@ -6,6 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.schemas.spatial import SpatialPerception
 from app.schemas.social import (
     ALLOWED_EMOTIONAL_TONES,
     ALLOWED_MESSAGE_INTENTS,
@@ -104,6 +105,7 @@ class DecisionContext(BaseModel):
     relationships: list[dict[str, Any]] = Field(default_factory=list)
     recalled_memories: list[dict[str, Any]] = Field(default_factory=list)
     local_resources: list[dict[str, Any]] = Field(default_factory=list)
+    spatial_context: SpatialPerception | None = None
 
 
 class DecisionConstraints(BaseModel):

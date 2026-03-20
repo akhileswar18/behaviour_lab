@@ -25,15 +25,20 @@ def _decide(
     relationship_context: dict | None = None,
     needs_context: dict | None = None,
     planning_context: dict | None = None,
+    spatial_context: dict | None = None,
 ) -> StructuredDecision:
     relationship_context = relationship_context or {}
     needs_context = needs_context or {}
     planning_context = planning_context or {}
+    spatial_context = spatial_context or {}
     relationship_affinity = float(relationship_context.get("affinity", 0.0))
     relationship_trust = float(relationship_context.get("trust", 0.0))
     hunger = float(needs_context.get("hunger", 0.0))
     safety_need = float(needs_context.get("safety_need", 0.0))
     social_need = float(needs_context.get("social_need", 0.0))
+    nearby_agents = spatial_context.get("nearby_agents", [])
+    current_room = spatial_context.get("current_room") or "current area"
+    has_nearby_agents = len(nearby_agents) > 0
 
     planned_action = planning_context.get("action")
     if planned_action in {
@@ -80,24 +85,28 @@ def _decide(
     cooperative_score = (
         coop + (relationship_affinity * 0.3) + (relationship_trust * 0.2) + (social_need * 0.2)
     )
-    if style == "diplomatic" and cooperative_score >= 0.55:
+    if style == "diplomatic" and cooperative_score >= 0.55 and has_nearby_agents:
         return StructuredDecision(
             action=SocialAction.COOPERATE.value,
             intent="propose",
             emotional_tone="supportive",
             rationale=(
-                f"{agent.name} cooperates with score={cooperative_score:.2f} while "
-                f"pursuing {planning_context.get('goal_type', 'context')}."
+                f"{agent.name} cooperates with {len(nearby_agents)} nearby peer(s) in {current_room} "
+                f"with score={cooperative_score:.2f} while pursuing "
+                f"{planning_context.get('goal_type', 'context')}."
             ),
             confidence=0.8,
         )
 
-    if style == "reserved" and (risk < 0.45 or world_pressure > 0.4):
+    if style == "reserved" and has_nearby_agents and (risk < 0.45 or world_pressure > 0.4):
         return StructuredDecision(
             action=SocialAction.AVOID.value,
             intent="avoid",
             emotional_tone="guarded",
-            rationale=f"{agent.name} avoids escalation with risk={risk:.2f} and pressure={world_pressure:.2f}.",
+            rationale=(
+                f"{agent.name} avoids nearby peers in {current_room} with "
+                f"risk={risk:.2f} and pressure={world_pressure:.2f}."
+            ),
             confidence=0.77,
         )
 
@@ -154,6 +163,7 @@ def choose_structured_action(context: DecisionContext) -> StructuredDecision:
         relationship_context=relationship_context,
         needs_context=context.needs,
         planning_context=context.planning_context,
+        spatial_context=(context.spatial_context.model_dump() if context.spatial_context else None),
     )
 
 
@@ -164,6 +174,7 @@ def choose_action(
     relationship_context: dict | None = None,
     needs_context: dict | None = None,
     planning_context: dict | None = None,
+    spatial_context: dict | None = None,
 ) -> SocialDecision:
     decision = _decide(
         agent=agent,
@@ -172,5 +183,6 @@ def choose_action(
         relationship_context=relationship_context,
         needs_context=needs_context,
         planning_context=planning_context,
+        spatial_context=spatial_context,
     )
     return SocialDecision(**decision.model_dump())

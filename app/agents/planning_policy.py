@@ -4,6 +4,7 @@ from typing import Any
 from uuid import UUID
 
 from app.persistence.models import AgentStateSnapshot, Goal, Intention, Resource, Zone
+from app.schemas.spatial import SpatialPerception
 from app.schemas.settings import get_settings
 from app.schemas.social import GoalStatus, IntentionStatus, SocialAction
 
@@ -19,6 +20,51 @@ def _resource_zone(resources: list[Resource], resource_type: str) -> UUID | None
     return None
 
 
+def _zone_id_by_name(zones_by_id: dict[UUID, Zone] | None, zone_name: str) -> UUID | None:
+    if not zones_by_id:
+        return None
+    for zone in zones_by_id.values():
+        if zone.name == zone_name:
+            return zone.id
+    return None
+
+
+def _nearest_resource(
+    resources: list[Resource],
+    resource_type: str,
+    zones_by_id: dict[UUID, Zone] | None,
+    spatial_context: SpatialPerception | None,
+) -> tuple[Resource | None, str | None, int | None]:
+    fallback = next(
+        (resource for resource in resources if resource.resource_type == resource_type and resource.quantity > 0),
+        None,
+    )
+    if fallback is None:
+        return None, None, None
+    if spatial_context is None or not zones_by_id:
+        zone = zones_by_id.get(fallback.zone_id) if zones_by_id else None
+        return fallback, zone.name if zone else None, None
+
+    best_resource = fallback
+    best_zone = zones_by_id.get(fallback.zone_id)
+    best_cost = None
+    for resource in resources:
+        if resource.resource_type != resource_type or resource.quantity <= 0:
+            continue
+        zone = zones_by_id.get(resource.zone_id)
+        if zone is None:
+            continue
+        key = f"{zone.name}:{resource.resource_type}"
+        cost = spatial_context.pathfinding_costs.get(key)
+        if cost is None:
+            continue
+        if best_cost is None or cost < best_cost:
+            best_resource = resource
+            best_zone = zone
+            best_cost = cost
+    return best_resource, best_zone.name if best_zone else None, best_cost
+
+
 def select_plan(
     latest_state: AgentStateSnapshot | None,
     active_goal: Goal | None,
@@ -27,6 +73,8 @@ def select_plan(
     local_resources: list[Resource],
     all_resources: list[Resource],
     urgent_events: list[dict[str, Any]],
+    zones_by_id: dict[UUID, Zone] | None = None,
+    spatial_context: SpatialPerception | None = None,
 ) -> dict[str, Any]:
     settings = get_settings()
     hunger = _clamp(latest_state.hunger if latest_state else 0.0)
@@ -36,9 +84,7 @@ def select_plan(
     zone_name = zone.name if zone else "unknown"
 
     if urgent_events and (active_intention is None or active_intention.is_interruptible):
-        target_zone_id = None
-        if zone_name != "Shelter":
-            target_zone_id = next((resource.zone_id for resource in all_resources if resource.zone_id != (zone.id if zone else None)), None)
+        target_zone_id = _zone_id_by_name(zones_by_id, "Shelter")
         return {
             "goal_type": "seek_safety",
             "goal_priority": 1.0,
@@ -77,14 +123,27 @@ def select_plan(
                 "target_zone_id": zone.id if zone else None,
                 "target_resource_id": local_food.id,
             }
-        food_zone_id = _resource_zone(all_resources, "food")
+        nearest_food, food_zone_name, path_cost = _nearest_resource(
+            all_resources,
+            "food",
+            zones_by_id,
+            spatial_context,
+        )
+        food_zone_id = nearest_food.zone_id if nearest_food is not None else _resource_zone(all_resources, "food")
+        target_zone_name = food_zone_name or "known food"
+        rationale = "Hunger is high enough to redirect movement toward known food."
+        if path_cost is not None:
+            rationale = (
+                f"Hunger is high enough to redirect movement toward food in {target_zone_name} "
+                f"with path cost {path_cost}."
+            )
         return {
             "goal_type": "satisfy_hunger",
             "goal_priority": hunger,
             "goal_source": "need",
-            "goal_target": {"resource_type": "food"},
+            "goal_target": {"resource_type": "food", "zone": food_zone_name} if food_zone_name else {"resource_type": "food"},
             "action": SocialAction.MOVE.value,
-            "rationale": "Hunger is high enough to redirect movement toward known food.",
+            "rationale": rationale,
             "interrupt": active_goal is not None and active_goal.goal_type != "satisfy_hunger",
             "target_zone_id": food_zone_id,
             "target_resource_id": None,
@@ -99,7 +158,7 @@ def select_plan(
             "action": SocialAction.MOVE.value,
             "rationale": "Safety need is severe, so the agent moves to shelter.",
             "interrupt": active_goal is not None and active_goal.goal_type != "seek_safety",
-            "target_zone_id": None,
+            "target_zone_id": _zone_id_by_name(zones_by_id, "Shelter"),
             "target_resource_id": None,
         }
 
@@ -114,7 +173,7 @@ def select_plan(
                 "action": SocialAction.MOVE.value,
                 "rationale": f"Continue active goal '{active_goal.goal_type}' by moving toward its target zone.",
                 "interrupt": False,
-                "target_zone_id": None,
+                "target_zone_id": _zone_id_by_name(zones_by_id, target_zone_name),
                 "target_resource_id": None,
             }
         if social_need >= 0.55:

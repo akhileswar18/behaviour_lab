@@ -31,7 +31,10 @@ def _ensure_indexes() -> None:
         "CREATE INDEX IF NOT EXISTS ix_intention_scenario_agent_status ON intention (scenario_id, agent_id, status)",
         "CREATE INDEX IF NOT EXISTS ix_resource_scenario_zone_type ON resource (scenario_id, zone_id, resource_type)",
         "CREATE INDEX IF NOT EXISTS ix_agent_state_agent_tick ON agentstatesnapshot (agent_id, tick_number)",
+        "CREATE INDEX IF NOT EXISTS ix_agentstatesnapshot_tile_x ON agentstatesnapshot (tile_x)",
+        "CREATE INDEX IF NOT EXISTS ix_agentstatesnapshot_tile_y ON agentstatesnapshot (tile_y)",
         "CREATE UNIQUE INDEX IF NOT EXISTS uq_zone_scenario_name ON zone (scenario_id, name)",
+        "CREATE UNIQUE INDEX IF NOT EXISTS uq_tilemapconfig_scenario ON tilemapconfig (scenario_id)",
     ]
     with engine.begin() as connection:
         for statement in statements:
@@ -55,6 +58,8 @@ def init_db() -> None:
             "safety_need FLOAT DEFAULT 0.0",
             "social_need FLOAT DEFAULT 0.0",
             "zone_id CHAR(32)",
+            "tile_x INTEGER",
+            "tile_y INTEGER",
             "inventory JSON DEFAULT '{}'",
         ],
     )
