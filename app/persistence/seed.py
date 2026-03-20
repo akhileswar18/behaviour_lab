@@ -25,10 +25,12 @@ from app.persistence.models import (
     Scenario,
     ScenarioEventInjection,
     SimulationEvent,
+    TileMapConfig,
     TickResult,
     Zone,
 )
 from app.schemas.social import IntentionStatus, MessageTargetMode, SimulationEventType
+from app.simulation.tilemap_loader import default_tilemap_path, load_tilemap
 
 
 def seed_scenario(scenario_name: str = "sample_social_triad") -> None:
@@ -55,6 +57,7 @@ def seed_scenario(scenario_name: str = "sample_social_triad") -> None:
         session.exec(delete(ScenarioEventInjection))
         session.exec(delete(RunComparisonSummary))
         session.exec(delete(RunMetadata))
+        session.exec(delete(TileMapConfig))
         session.exec(delete(Agent))
         session.exec(delete(PersonaProfile))
         session.exec(delete(Scenario))
@@ -77,6 +80,22 @@ def seed_scenario(scenario_name: str = "sample_social_triad") -> None:
             session.commit()
             session.refresh(zone)
             zone_rows[zone.name] = zone
+
+        embodied_tilemap = None
+        if scenario_name == "sample_goal_resource_lab":
+            embodied_tilemap = load_tilemap(default_tilemap_path())
+            session.add(
+                TileMapConfig(
+                    scenario_id=scenario.id,
+                    map_file_path=str(default_tilemap_path()),
+                    tile_width=embodied_tilemap.tile_width,
+                    tile_height=embodied_tilemap.tile_height,
+                    grid_width=embodied_tilemap.grid_width,
+                    grid_height=embodied_tilemap.grid_height,
+                    zone_bindings={zone_name: zone_name for zone_name in zone_rows},
+                )
+            )
+            session.commit()
 
         agent_rows: dict[str, Agent] = {}
         for a in agents_cfg["agents"]:
@@ -109,6 +128,8 @@ def seed_scenario(scenario_name: str = "sample_social_triad") -> None:
                 safety_need=float(initial_state.get("safety_need", 0.0)),
                 social_need=float(initial_state.get("social_need", 0.0)),
                 zone_id=zone_id,
+                tile_x=(embodied_tilemap.center_for_zone(zone_name)[0] if embodied_tilemap and zone_name and embodied_tilemap.center_for_zone(zone_name) else None),
+                tile_y=(embodied_tilemap.center_for_zone(zone_name)[1] if embodied_tilemap and zone_name and embodied_tilemap.center_for_zone(zone_name) else None),
                 inventory=initial_state.get("inventory", {}),
             )
             session.add(state)

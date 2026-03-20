@@ -7,6 +7,7 @@ from uuid import UUID
 
 from sqlmodel import Session, select
 
+from app.api.schemas.world import build_world_snapshot
 from app.persistence.models import (
     Agent,
     AgentStateSnapshot,
@@ -24,6 +25,7 @@ from app.persistence.repositories.run_repository import RunRepository
 from app.schemas.decision_engine import LlmConfig, PolicyMode
 from app.schemas.social import SimulationEventType
 from app.simulation.tick_engine import run_tick
+from app.ws.broadcaster import world_broadcaster
 
 logger = logging.getLogger(__name__)
 
@@ -123,15 +125,15 @@ class SimulationRunner:
 
         results: list[TickResult] = []
         for tick in range(start_tick, start_tick + ticks):
-            results.append(
-                run_tick(
-                    self.session,
-                    scenario_id,
-                    tick,
-                    policy_mode=policy_mode,
-                    llm_config=effective_llm,
-                )
+            tick_result = run_tick(
+                self.session,
+                scenario_id,
+                tick,
+                policy_mode=policy_mode,
+                llm_config=effective_llm,
             )
+            results.append(tick_result)
+            world_broadcaster.publish_snapshot(build_world_snapshot(self.session, scenario_id, tick))
 
         end_tick = results[-1].tick_number if results else start_tick
         events_created = sum(result.events_created for result in results)

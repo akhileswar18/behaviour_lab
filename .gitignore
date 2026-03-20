@@ -17,6 +17,10 @@ dist/
 build/
 *.egg-info/
 .eggs/
+node_modules/
+client/dist/
+client/node_modules/
+*.tsbuildinfo
 
 # Local runtime artifacts
 data/

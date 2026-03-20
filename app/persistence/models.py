@@ -52,7 +52,23 @@ class AgentStateSnapshot(SQLModel, table=True):
     safety_need: float = 0.0
     social_need: float = 0.0
     zone_id: Optional[UUID] = Field(default=None, index=True)
+    tile_x: Optional[int] = Field(default=None, index=True)
+    tile_y: Optional[int] = Field(default=None, index=True)
     inventory: dict[str, int] = Field(default_factory=dict, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class TileMapConfig(SQLModel, table=True):
+    __table_args__ = (UniqueConstraint("scenario_id", name="uq_tilemapconfig_scenario"),)
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    scenario_id: UUID = Field(index=True)
+    map_file_path: str
+    tile_width: int = 16
+    tile_height: int = 16
+    grid_width: int = 0
+    grid_height: int = 0
+    zone_bindings: dict[str, str] = Field(default_factory=dict, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 

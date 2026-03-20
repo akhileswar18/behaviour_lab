@@ -1,7 +1,7 @@
 # Multi-Agent Behavior Lab
 
 Lightweight, local-first multi-agent simulation platform focused on persona, memory,
-communication, goals, needs, resources, and observability.
+communication, goals, needs, resources, observability, and embodied spatial grounding.
 
 ## Phase 4 MVP
 
@@ -19,6 +19,9 @@ Phase 4 is the current active build. The system now supports:
 - strict structured LLM output parsing and deterministic fallback
 - persisted decision-source, parser-status, and fallback telemetry
 - FastAPI and Streamlit surfaces backed by persisted SQLite state
+- Constitution v1.1.0 defines an additive Phaser 3 + React embodied world viewer over
+  FastAPI WebSocket for the next phase; the current Phase 4 codebase remains
+  dashboard-first in shipped functionality
 
 ## Local run sequence
 
@@ -109,7 +112,8 @@ pytest -q
 
 - LLM reasoning is single-step per tick only; no long-horizon freeform planner
 - no vector memory, websockets, auth, cloud runtime, or distributed agents
-- no pygame / 2D embodiment in Phase 4
+- the Phaser 3 embodied world viewer defined in constitution v1.1.0 is not yet shipped in
+  Phase 4
 - no full physics, complex economy, or complex emotion engine
 - reset behavior is basic and should not be treated as a full scenario restore workflow
 

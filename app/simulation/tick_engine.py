@@ -27,6 +27,7 @@ from app.persistence.models import (
 from app.persistence.repositories.agent_repository import AgentRepository
 from app.persistence.repositories.memory_repository import MemoryRepository
 from app.persistence.repositories.planning_repository import PlanningRepository
+from app.persistence.repositories.spatial_repository import SpatialRepository
 from app.persistence.repositories.social_repository import SocialRepository
 from app.persistence.repositories.world_repository import WorldRepository
 from app.schemas.decision_engine import (
@@ -37,6 +38,9 @@ from app.schemas.decision_engine import (
 )
 from app.schemas.settings import get_settings
 from app.schemas.social import GoalStatus, IntentionStatus, SimulationEventType, SocialAction
+from app.simulation.pathfinding import astar_path
+from app.simulation.spatial_context import build_spatial_perception, resolve_tile_position
+from app.simulation.tilemap_loader import load_tilemap
 from app.simulation.world_state import build_tick_context, mark_world_events_consumed
 
 
@@ -209,6 +213,7 @@ def run_tick(
     memory_repo = MemoryRepository(session)
     social_repo = SocialRepository(session)
     planning_repo = PlanningRepository(session)
+    spatial_repo = SpatialRepository(session)
     world_repo = WorldRepository(session)
     effective_engine = decision_engine or DecisionEngine()
     effective_llm_config = llm_config or LlmConfig(
@@ -232,6 +237,9 @@ def run_tick(
     latest_state_by_agent = context["latest_state_by_agent"]
     zones_by_id = {zone.id: zone for zone in zones}
     zones_by_name = {zone.name: zone for zone in zones}
+    agents_by_id = {agent.id: agent for agent in agents}
+    map_config = spatial_repo.get_map_config(scenario_id)
+    tilemap = load_tilemap(map_config.map_file_path) if map_config is not None else None
 
     processed_agents = 0
     events_created = 0
@@ -269,6 +277,7 @@ def run_tick(
         latest_state = latest_state_by_agent.get(agent.id) or agent_repo.latest_state(agent.id)
         agent_cfg = _build_agent_config(agent.name, persona, latest_state)
         current_zone = zones_by_id.get(latest_state.zone_id) if latest_state and latest_state.zone_id else None
+        current_tile = resolve_tile_position(latest_state, current_zone, tilemap)
         local_resources = [resource for resource in resources if current_zone and resource.zone_id == current_zone.id]
         urgent_here = any(
             float((world_event.payload or {}).get("urgency", 0.0)) >= settings.interruption_urgency_threshold
@@ -290,6 +299,16 @@ def run_tick(
         active_goal = planning_repo.active_goal(scenario_id, agent.id)
         active_intention = planning_repo.active_intention(scenario_id, agent.id)
         urgent_events = [item for item in world_event_observed if float(item.get("payload", {}).get("urgency", 0.0)) >= settings.interruption_urgency_threshold]
+        spatial_context = build_spatial_perception(
+            agent=agent,
+            state=latest_state,
+            zone=current_zone,
+            tilemap=tilemap,
+            latest_state_by_agent=latest_state_by_agent,
+            agents_by_id=agents_by_id,
+            zones_by_id=zones_by_id,
+            resources=resources,
+        )
         plan = select_plan(
             latest_state=AgentStateSnapshot(
                 agent_id=agent.id,
@@ -297,6 +316,8 @@ def run_tick(
                 safety_need=float(progressed["safety_need"]),
                 social_need=float(progressed["social_need"]),
                 zone_id=current_zone.id if current_zone else None,
+                tile_x=current_tile[0] if current_tile else None,
+                tile_y=current_tile[1] if current_tile else None,
                 inventory=progressed["inventory"],
             ),
             active_goal=active_goal,
@@ -305,6 +326,8 @@ def run_tick(
             local_resources=local_resources,
             all_resources=resources,
             urgent_events=urgent_events,
+            zones_by_id=zones_by_id,
+            spatial_context=spatial_context,
         )
         if plan.get("target_zone_id") is None:
             target_zone_name = str(plan.get("goal_target", {}).get("zone", "")).strip()
@@ -442,6 +465,7 @@ def run_tick(
                 }
                 for resource in local_resources
             ],
+            spatial_context=spatial_context,
         )
         constraints = DecisionConstraints(
             allowed_zone_ids=[str(zone.id) for zone in zones],
@@ -552,6 +576,7 @@ def run_tick(
         action_event: SimulationEvent | None = None
         current_inventory = dict(progressed["inventory"])
         next_zone_id = current_zone.id if current_zone else None
+        next_tile = current_tile
         next_hunger = float(progressed["hunger"])
         next_safety = float(progressed["safety_need"])
         next_social = float(progressed["social_need"])
@@ -563,6 +588,11 @@ def run_tick(
                 target_zone = zones_by_name[plan["goal_target"]["zone"]]
             if target_zone is not None:
                 next_zone_id = target_zone.id
+                target_center = tilemap.center_for_zone(target_zone.name) if tilemap else None
+                movement_path: list[tuple[int, int]] = []
+                if tilemap is not None and current_tile is not None and target_center is not None:
+                    movement_path = astar_path(tilemap.collision_grid, current_tile, target_center)
+                    next_tile = target_center if movement_path else current_tile
                 action_event = social_repo.add_event(
                     SimulationEvent(
                         scenario_id=scenario_id,
@@ -575,6 +605,15 @@ def run_tick(
                             "goal_id": str(goal.id),
                             "intention_id": str(intention.id),
                             "zone_id": str(target_zone.id),
+                            "source_tile_x": current_tile[0] if current_tile else None,
+                            "source_tile_y": current_tile[1] if current_tile else None,
+                            "target_tile_x": target_center[0] if target_center else None,
+                            "target_tile_y": target_center[1] if target_center else None,
+                            "target_zone_id": str(target_zone.id),
+                            "path": [
+                                {"tile_x": tile_x, "tile_y": tile_y}
+                                for tile_x, tile_y in movement_path
+                            ],
                         },
                         created_at=datetime.utcnow(),
                     )
@@ -789,6 +828,8 @@ def run_tick(
                 safety_need=next_safety,
                 social_need=next_social,
                 zone_id=next_zone_id,
+                tile_x=next_tile[0] if next_tile else None,
+                tile_y=next_tile[1] if next_tile else None,
                 inventory=current_inventory,
                 created_at=datetime.utcnow(),
             )

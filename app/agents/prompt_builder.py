@@ -52,6 +52,10 @@ def build_prompt(context: DecisionContext) -> PromptBuildResult:
     memories = _top_memories(context.recalled_memories)
     relationships = _top_relationships(context.relationships)
     resources = context.local_resources[:6]
+    nearby_agents = (context.spatial_context.nearby_agents if context.spatial_context else [])[:6]
+    nearby_objects = (context.spatial_context.nearby_objects if context.spatial_context else [])[:6]
+    visible_resources = (context.spatial_context.visible_resources if context.spatial_context else [])[:6]
+    pathfinding_costs = dict(sorted((context.spatial_context.pathfinding_costs if context.spatial_context else {}).items()))
 
     compact = {
         "agent": {
@@ -65,6 +69,35 @@ def build_prompt(context: DecisionContext) -> PromptBuildResult:
         "planning_context": context.planning_context,
         "zone": context.zone or {},
         "resources": resources,
+        "spatial_context": {
+            "current_room": context.spatial_context.current_room if context.spatial_context else None,
+            "current_tile": (
+                context.spatial_context.current_tile.model_dump()
+                if context.spatial_context and context.spatial_context.current_tile
+                else None
+            ),
+            "nearby_agents": [
+                {
+                    "agent_name": item.agent_name,
+                    "tile_distance": item.tile_distance,
+                    "zone_name": item.zone_name,
+                }
+                for item in nearby_agents
+            ],
+            "nearby_objects": [
+                {
+                    "name": item.name,
+                    "zone_name": item.zone_name,
+                    "affordance_type": item.affordance_type,
+                    "resource_type": item.resource_type,
+                    "tile_position": item.tile_position.model_dump(),
+                }
+                for item in nearby_objects
+            ],
+            "visible_resources": visible_resources,
+            "pathfinding_costs": pathfinding_costs,
+            "door_connections": list(context.spatial_context.door_connections if context.spatial_context else []),
+        },
         "recent_world_events": [
             {
                 "tick_number": int(item.get("tick_number", context.tick_number)),
@@ -114,6 +147,12 @@ def build_prompt(context: DecisionContext) -> PromptBuildResult:
         "memory_count": len(memories),
         "relationship_count": len(relationships),
         "resource_count": len(resources),
+        "spatial_count": {
+            "nearby_agents": len(nearby_agents),
+            "nearby_objects": len(nearby_objects),
+            "visible_resources": len(visible_resources),
+            "pathfinding_targets": len(pathfinding_costs),
+        },
         "truncated": {
             "events": max(0, len(context.observed_events) - len(events)),
             "memories": max(0, len(context.recalled_memories) - len(memories)),
