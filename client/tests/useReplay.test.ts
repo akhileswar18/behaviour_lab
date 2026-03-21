@@ -140,4 +140,64 @@ describe("useReplay", () => {
     expect(api().followSelectedAgent).toBe(true);
     expect(api().mode).toBe("live");
   });
+
+  it("tracks previous/current snapshots while playback advances at configured intervals", async () => {
+    vi.useFakeTimers();
+    (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const replay = makeReplayResponse();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => replay,
+      }),
+    );
+
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = ReactDOM.createRoot(container);
+
+    await act(async () => {
+      root.render(
+        React.createElement(ReplayHarness, {
+          baseUrl: "http://127.0.0.1:8000",
+          onReady: (api: ReturnType<typeof useReplay>) => {
+            currentApi = api;
+          },
+        }),
+      );
+    });
+
+    const api = () => currentApi as ReturnType<typeof useReplay>;
+
+    await act(async () => {
+      await api().loadReplay("scenario-1", 1, 3);
+    });
+
+    expect(api().currentSnapshot?.tick_number).toBe(1);
+    expect(api().previousSnapshot).toBeNull();
+
+    act(() => {
+      api().setPlaybackSpeed(5);
+      api().play();
+    });
+    act(() => {
+      vi.advanceTimersByTime(180);
+    });
+    expect(api().currentSnapshot?.tick_number).toBe(2);
+    expect(api().previousSnapshot?.tick_number).toBe(1);
+
+    act(() => {
+      vi.advanceTimersByTime(180);
+    });
+    expect(api().currentSnapshot?.tick_number).toBe(3);
+    expect(api().previousSnapshot?.tick_number).toBe(2);
+    expect(api().isPlaying).toBe(false);
+
+    act(() => {
+      api().scrubToIndex(0);
+    });
+    expect(api().currentSnapshot?.tick_number).toBe(1);
+    expect(api().previousSnapshot).toBeNull();
+  });
 });

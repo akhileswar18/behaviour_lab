@@ -2,7 +2,12 @@ import Phaser from "phaser";
 
 import { AgentSprite, tileToWorldPosition } from "../sprites/AgentSprite";
 import { InteractionArc } from "../ui/InteractionArc";
-import { interpolatePosition } from "../systems/Interpolation";
+import {
+  DEFAULT_TICK_INTERVAL_MS,
+  computeInterpolationFactor,
+  estimateTickIntervalMs,
+  interpolatePosition,
+} from "../systems/Interpolation";
 import { applyDayNightTint } from "../systems/DayNight";
 import type { WorldSnapshot } from "../../types/world";
 import type { RenderAgentState } from "../../hooks/useSimulationState";
@@ -96,6 +101,10 @@ export class WorldScene extends Phaser.Scene {
   private usingFallbackLayout = false;
   private fallbackReason = "";
   private hasAutoCenteredAgents = false;
+  private previousTickTimestamp: number | null = null;
+  private lastTickTimestamp: number | null = null;
+  private tickIntervalMs = DEFAULT_TICK_INTERVAL_MS;
+  private lastRenderedTick: number | null = null;
 
   constructor(private readonly configData: WorldSceneConfig) {
     super("WorldScene");
@@ -141,10 +150,20 @@ export class WorldScene extends Phaser.Scene {
       this.renderTilemap(renderPlan);
     }
     this.isReady = true;
-    this.renderSnapshot();
+    this.renderSnapshot(1);
   }
 
   update() {
+    const alpha =
+      this.viewMode === "replay"
+        ? 1
+        : computeInterpolationFactor({
+            lastTickTimestamp: this.lastTickTimestamp,
+            now: Date.now(),
+            tickIntervalMs: this.tickIntervalMs,
+          });
+    this.renderSnapshot(alpha);
+
     if (this.followSelectedAgent && this.viewMode === "replay") {
       return;
     }
@@ -179,14 +198,36 @@ export class WorldScene extends Phaser.Scene {
     viewMode: "live" | "replay",
     followSelectedAgent: boolean,
   ) {
-    this.previousSnapshot = previousSnapshot;
-    this.currentSnapshot = snapshot;
+    if (viewMode === "live") {
+      const currentTick = this.currentSnapshot?.tick_number ?? null;
+      const nextTick = snapshot?.tick_number ?? null;
+      const isNewTick = nextTick !== null && nextTick !== currentTick;
+      if (isNewTick) {
+        this.previousSnapshot = this.currentSnapshot;
+        this.currentSnapshot = snapshot;
+        this.previousTickTimestamp = this.lastTickTimestamp;
+        this.lastTickTimestamp = Date.now();
+        this.tickIntervalMs = estimateTickIntervalMs({
+          previousTickTimestamp: this.previousTickTimestamp,
+          lastTickTimestamp: this.lastTickTimestamp,
+        });
+      } else if (snapshot) {
+        this.currentSnapshot = snapshot;
+      }
+    } else {
+      this.previousSnapshot = previousSnapshot;
+      this.currentSnapshot = snapshot;
+      this.previousTickTimestamp = null;
+      this.lastTickTimestamp = null;
+      this.tickIntervalMs = DEFAULT_TICK_INTERVAL_MS;
+    }
     this.renderAgents = new Map(renderAgents.map((item) => [item.agent.agent_id, item]));
     this.selectedAgentId = selectedAgentId;
     this.viewMode = viewMode;
     this.followSelectedAgent = followSelectedAgent;
     if (this.isReady) {
-      this.renderSnapshot();
+      const alpha = this.viewMode === "live" ? 0 : 1;
+      this.renderSnapshot(alpha);
     }
   }
 
@@ -272,7 +313,7 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  private renderSnapshot() {
+  private renderSnapshot(alpha: number) {
     if (!this.currentSnapshot) {
       return;
     }
@@ -296,7 +337,7 @@ export class WorldScene extends Phaser.Scene {
       const previous = this.previousSnapshot?.agents.find(
         (item) => item.agent_id === agent.agent_id,
       );
-      const position = interpolatePosition(previous, agent, 1);
+      const position = interpolatePosition(previous, agent, alpha);
       const deltaX = (agent.position?.tile_x ?? position.tile_x) - (previous?.position?.tile_x ?? position.tile_x);
       const deltaY = (agent.position?.tile_y ?? position.tile_y) - (previous?.position?.tile_y ?? position.tile_y);
       let facing: "down" | "left" | "right" | "up" = "down";
@@ -310,11 +351,14 @@ export class WorldScene extends Phaser.Scene {
         position,
         agent.agent_id === this.selectedAgentId,
         facing,
-        Math.abs(deltaX) + Math.abs(deltaY) > 0,
+        Math.abs(deltaX) + Math.abs(deltaY) > 0 && alpha < 1,
       );
     }
 
-    this.renderConversationArcs();
+    if (this.currentSnapshot.tick_number !== this.lastRenderedTick) {
+      this.renderConversationArcs();
+      this.lastRenderedTick = this.currentSnapshot.tick_number;
+    }
     this.applyCameraMode();
     this.renderMinimap();
 

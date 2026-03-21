@@ -56,13 +56,16 @@ export class AgentSprite {
     moving = false,
   ) {
     const world = tileToWorldPosition(position);
-    this.facing = facing;
+    if (moving) {
+      this.facing = facing;
+    }
+    const activeFacing = moving ? facing : this.facing;
     this.marker.setPosition(world.x, world.y);
     if ("setStrokeStyle" in this.marker) {
       this.marker.setStrokeStyle(selected ? 3 : 0, 0xf8fafc);
     }
     if ("play" in this.marker) {
-      this.marker.play(this.animationKey(moving ? `walk-${facing}` : "idle"), true);
+      this.marker.play(this.animationKey(moving ? `walk-${activeFacing}` : "idle"), true);
     }
     this.label.setPosition(world.x - 14, world.y + 12);
     this.label.setText(agent.name);

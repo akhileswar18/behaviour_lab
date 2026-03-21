@@ -143,14 +143,14 @@
 
 ### Tests for User Story 5
 
-- [ ] T032 [P] [US5] Add lerp timing and clamp coverage in `client/tests/interpolation.test.ts` [Deps: T020] [Output: failing unit tests for time-based interpolation factor computation and snap thresholds]
-- [ ] T033 [P] [US5] Extend `client/tests/useReplay.test.ts` to verify snapshot buffering and frame-to-frame interpolation timing assumptions used by the live renderer [Deps: T018] [Output: failing tests for previous/current snapshot shifting and tick interval fallback behavior]
+- [X] T032 [P] [US5] Add lerp timing and clamp coverage in `client/tests/interpolation.test.ts` [Deps: T020] [Output: failing unit tests for time-based interpolation factor computation and snap thresholds]
+- [X] T033 [P] [US5] Extend `client/tests/useReplay.test.ts` to verify snapshot buffering and frame-to-frame interpolation timing assumptions used by the live renderer [Deps: T018] [Output: failing tests for previous/current snapshot shifting and tick interval fallback behavior]
 
 ### Implementation for User Story 5
 
-- [ ] T034 [US5] Replace hardcoded interpolation with time-based lerp computation in `client/src/game/systems/Interpolation.ts` [Deps: T032] [Output: reusable interpolation helper that derives `t` from tick timestamps and interval estimates]
-- [ ] T035 [US5] Shift snapshot buffering, per-frame rendering, and movement direction detection in `client/src/game/scenes/WorldScene.ts` [Deps: T033, T034] [Output: the world scene interpolates every frame between previous and current authoritative snapshots]
-- [ ] T036 [US5] Update `client/src/game/sprites/AgentSprite.ts` to switch directional walk and idle animations from movement deltas [Deps: T019, T035] [Output: agent sprites animate correctly during movement and return to idle when interpolation completes]
+- [X] T034 [US5] Replace hardcoded interpolation with time-based lerp computation in `client/src/game/systems/Interpolation.ts` [Deps: T032] [Output: reusable interpolation helper that derives `t` from tick timestamps and interval estimates]
+- [X] T035 [US5] Shift snapshot buffering, per-frame rendering, and movement direction detection in `client/src/game/scenes/WorldScene.ts` [Deps: T033, T034] [Output: the world scene interpolates every frame between previous and current authoritative snapshots]
+- [X] T036 [US5] Update `client/src/game/sprites/AgentSprite.ts` to switch directional walk and idle animations from movement deltas [Deps: T019, T035] [Output: agent sprites animate correctly during movement and return to idle when interpolation completes]
 - [ ] T037 [US5] Run live browser verification for multi-tile movement through `client/src/game/scenes/WorldScene.ts`, `client/src/game/systems/Interpolation.ts`, and `client/src/game/sprites/AgentSprite.ts` [Deps: T036] [Output: confirmed smooth movement with no teleporting between ticks]
 
 **Checkpoint**: Agents now walk smoothly through the house with direction-aware animation instead of snapping tile-to-tile.
